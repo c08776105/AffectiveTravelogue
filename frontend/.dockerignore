@@ -1,0 +1,7 @@
+node_modules
+dist
+.bun_cache
+.tmp
+.git
+.vscode
+*.log
