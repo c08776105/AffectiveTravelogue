@@ -1,0 +1,9 @@
+__pycache__
+.venv
+.uv_cache
+.uv
+.git
+.vscode
+.DS_Store
+*.log
+backend/logs

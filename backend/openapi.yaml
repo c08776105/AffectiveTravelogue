@@ -1,0 +1,531 @@
+openapi: 3.1.0
+info:
+  title: Affective Travelogue API
+  description: Backend for MSc Dissertation project on AI-synthesised travelogues
+  version: 1.0.0
+paths:
+  /api/routes/:
+    post:
+      tags:
+        - Routes
+      summary: Create Route
+      operationId: create_route_api_routes__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RouteCreate"
+        required: true
+      responses:
+        "201":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RouteResponse"
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+  /api/routes/{id}:
+    get:
+      tags:
+        - Routes
+      summary: Get Route
+      operationId: get_route_api_routes__id__get
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Id
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RouteResponse"
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+    patch:
+      tags:
+        - Routes
+      summary: Update Route
+      operationId: update_route_api_routes__id__patch
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RouteUpdate"
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RouteResponse"
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+    delete:
+      tags:
+        - Routes
+      summary: Delete Route
+      operationId: delete_route_api_routes__id__delete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Id
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+  /api/routes/{id}/finalise:
+    post:
+      tags:
+        - Routes
+      summary: Finalise Route
+      operationId: finalise_route_api_routes__id__finalise_post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RouteUpdate"
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RouteResponse"
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+  /api/waypoints/:
+    post:
+      tags:
+        - Waypoints
+      summary: Submit Waypoint
+      operationId: submit_waypoint_api_waypoints__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WaypointCreate"
+        required: true
+      responses:
+        "201":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaypointResponse"
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+  /api/generate/{route_id}:
+    post:
+      tags:
+        - Generation
+      summary: Generate Travelogue
+      operationId: generate_travelogue_api_generate__route_id__post
+      parameters:
+        - name: route_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Route Id
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+  /api/evaluate/{route_id}:
+    post:
+      tags:
+        - Evaluation
+      summary: Evaluate Route
+      operationId: evaluate_route_api_evaluate__route_id__post
+      parameters:
+        - name: route_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Route Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvaluationCreate"
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvaluationResponse"
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+  /health:
+    get:
+      summary: Health Check
+      operationId: health_check_health_get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+components:
+  schemas:
+    EvaluationCreate:
+      properties:
+        routeId:
+          type: string
+          title: Routeid
+        humanJournal:
+          type: string
+          title: Humanjournal
+      type: object
+      required:
+        - routeId
+        - humanJournal
+      title: EvaluationCreate
+    EvaluationResponse:
+      properties:
+        bertscoreF1:
+          type: number
+          title: Bertscoref1
+        bertscorePrecision:
+          type: number
+          title: Bertscoreprecision
+        bertscoreRecall:
+          type: number
+          title: Bertscorerecall
+        isEquivalent:
+          type: boolean
+          title: Isequivalent
+        humanSentiment:
+          type: number
+          title: Humansentiment
+        aiSentiment:
+          type: number
+          title: Aisentiment
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+      type: object
+      required:
+        - bertscoreF1
+        - bertscorePrecision
+        - bertscoreRecall
+        - isEquivalent
+        - humanSentiment
+        - aiSentiment
+      title: EvaluationResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: "#/components/schemas/ValidationError"
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    RouteCreate:
+      properties:
+        name:
+          type: string
+          title: Name
+          description: Name of the route
+          example: Glendinn Forest Loop
+        startLat:
+          type: number
+          maximum: 90.0
+          minimum: -90.0
+          title: Startlat
+        startLon:
+          type: number
+          maximum: 180.0
+          minimum: -180.0
+          title: Startlon
+        endLat:
+          anyOf:
+            - type: number
+              maximum: 90.0
+              minimum: -90.0
+            - type: "null"
+          title: Endlat
+        endLon:
+          anyOf:
+            - type: number
+              maximum: 180.0
+              minimum: -180.0
+            - type: "null"
+          title: Endlon
+        distanceKm:
+          anyOf:
+            - type: number
+              exclusiveMinimum: 0.0
+            - type: "null"
+          title: Distancekm
+      type: object
+      required:
+        - name
+        - startLat
+        - startLon
+      title: RouteCreate
+    RouteResponse:
+      properties:
+        name:
+          type: string
+          title: Name
+          description: Name of the route
+          example: Glendinn Forest Loop
+        startLat:
+          type: number
+          maximum: 90.0
+          minimum: -90.0
+          title: Startlat
+        startLon:
+          type: number
+          maximum: 180.0
+          minimum: -180.0
+          title: Startlon
+        endLat:
+          anyOf:
+            - type: number
+              maximum: 90.0
+              minimum: -90.0
+            - type: "null"
+          title: Endlat
+        endLon:
+          anyOf:
+            - type: number
+              maximum: 180.0
+              minimum: -180.0
+            - type: "null"
+          title: Endlon
+        distanceKm:
+          anyOf:
+            - type: number
+              exclusiveMinimum: 0.0
+            - type: "null"
+          title: Distancekm
+        id:
+          type: string
+          title: Id
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        status:
+          type: string
+          title: Status
+          default: active
+      type: object
+      required:
+        - name
+        - startLat
+        - startLon
+        - id
+        - createdAt
+      title: RouteResponse
+    RouteUpdate:
+      properties:
+        name:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Name
+        status:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Status
+        endLat:
+          anyOf:
+            - type: number
+            - type: "null"
+          title: Endlat
+        endLon:
+          anyOf:
+            - type: number
+            - type: "null"
+          title: Endlon
+        distanceKm:
+          anyOf:
+            - type: number
+            - type: "null"
+          title: Distancekm
+      type: object
+      title: RouteUpdate
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
+    WaypointCreate:
+      properties:
+        latitude:
+          type: number
+          maximum: 90.0
+          minimum: -90.0
+          title: Latitude
+        longitude:
+          type: number
+          maximum: 180.0
+          minimum: -180.0
+          title: Longitude
+        textNote:
+          anyOf:
+            - type: string
+              maxLength: 500
+            - type: "null"
+          title: Textnote
+        voiceBlobUrl:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Voicebloburl
+        imageUrl:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Imageurl
+        routeId:
+          type: string
+          title: Routeid
+      type: object
+      required:
+        - latitude
+        - longitude
+        - routeId
+      title: WaypointCreate
+    WaypointResponse:
+      properties:
+        latitude:
+          type: number
+          maximum: 90.0
+          minimum: -90.0
+          title: Latitude
+        longitude:
+          type: number
+          maximum: 180.0
+          minimum: -180.0
+          title: Longitude
+        textNote:
+          anyOf:
+            - type: string
+              maxLength: 500
+            - type: "null"
+          title: Textnote
+        voiceBlobUrl:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Voicebloburl
+        imageUrl:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Imageurl
+        id:
+          type: string
+          title: Id
+        transcription:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Transcription
+        storedAt:
+          type: string
+          format: date-time
+          title: Storedat
+      type: object
+      required:
+        - latitude
+        - longitude
+        - id
+        - storedAt
+      title: WaypointResponse

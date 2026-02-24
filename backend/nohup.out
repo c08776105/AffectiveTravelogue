@@ -1,0 +1,8 @@
+INFO:     Started server process [21390]
+INFO:     Waiting for application startup.
+2026-02-24 18:22:46,378 - affective_travelogue - INFO - Starting Affective Travelogue Backend...
+INFO:     Application startup complete.
+ERROR:    [Errno 48] error while attempting to bind on address ('127.0.0.1', 8000): [errno 48] address already in use
+INFO:     Waiting for application shutdown.
+2026-02-24 18:22:46,378 - affective_travelogue - INFO - Shutting down Affective Travelogue Backend...
+INFO:     Application shutdown complete.

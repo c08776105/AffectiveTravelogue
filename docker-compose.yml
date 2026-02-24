@@ -1,0 +1,41 @@
+version: '3.9'
+
+services:
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: affective-frontend
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_URL=http://backend:8000
+    depends_on:
+      - backend
+    networks:
+      - affective-network
+    restart: unless-stopped
+
+  # Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: affective-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - NEO4J_URI=${NEO4J_URI}
+      - NEO4J_USER=${NEO4J_USER}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - OLLAMA_HOST=${OLLAMA_HOST}
+    volumes:
+      - ./backend/logs:/app/logs
+    networks:
+      - affective-network
+    restart: unless-stopped
+
+networks:
+  affective-network:
+    driver: bridge
