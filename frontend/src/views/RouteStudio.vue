@@ -80,6 +80,20 @@
                 </v-card>
             </div>
 
+            <!-- Locate me FAB -->
+            <v-fab
+                :disabled="!canLocate"
+                icon
+                location="right end"
+                size="large"
+                app
+                color="white"
+                class="mt-4 mr-4"
+                @click="locateMe"
+            >
+                <v-icon>mdi-crosshairs-gps</v-icon>
+            </v-fab>
+
             <!-- Start Actions -->
             <div
                 class="position-absolute bottom-0 left-0 right-0 z-10 pa-4 pb-8 d-flex gap-4"
@@ -188,6 +202,7 @@ const router = useRouter();
 const routeStore = useRouteStore();
 
 // State
+const canLocate = ref(true);
 const map = shallowRef<maplibregl.Map | null>(null);
 const directions = shallowRef<any>(null);
 const planningMode = ref<"free" | "route">("free");
@@ -207,6 +222,10 @@ const markers = ref<maplibregl.Marker[]>([]);
 const currentLocation = ref({ lat: 53.3498, lng: -6.2603 });
 
 onMounted(() => {
+    if (!navigator.geolocation) {
+        canLocate.value = false;
+    }
+
     map.value = new maplibregl.Map({
         container: "map-container",
         style: "https://tiles.openfreemap.org/styles/liberty",
@@ -232,6 +251,18 @@ onMounted(() => {
         directions.value.interactive = true;
     });
 });
+
+function locateMe() {
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const { latitude, longitude } = position.coords;
+            map.value.flyTo({ center: [longitude, latitude], zoom: 15 });
+        },
+        (error) => {
+            alert(`Error getting location: ${error.message}`);
+        },
+    );
+}
 
 function setMode(mode: "free" | "route") {
     planningMode.value = mode;
