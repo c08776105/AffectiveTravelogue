@@ -380,7 +380,7 @@ async function endWalk() {
 
     // Slight delay for visual feedback
     setTimeout(async () => {
-        await routeStore.finalizeRoute();
+        await routeStore.finaliseRoute();
         router.push("/journal");
     }, 500);
 }

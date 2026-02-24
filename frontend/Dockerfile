@@ -7,7 +7,7 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
 COPY . .
-RUN bun run build
+RUN bunx vite build
 
 # Runtime phase (using nginx on Alpine linux as a base)
 FROM nginx:alpine
