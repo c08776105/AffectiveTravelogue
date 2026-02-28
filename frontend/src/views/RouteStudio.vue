@@ -259,7 +259,7 @@ function locateMe() {
             map.value.flyTo({ center: [longitude, latitude], zoom: 15 });
         },
         (error) => {
-            alert(`Error getting location: ${error.message}`);
+            console.error(`Error getting location: ${error.message}`);
         },
     );
 }
@@ -288,7 +288,8 @@ function handleMapClick(e: maplibregl.MapMouseEvent) {
         const midLng = (startPoint.value.lng + endPoint.value.lng) / 2;
 
         // Random offset: roughly 0.5km to 1.5km
-        // 1 degree latitude is approx 111km, so 0.01 is about 1.1km
+        // 1 degree latitude is approx 111km, so 0.01 is about 1.1km.
+        // Used 0.03 (3.3km) of a deviation for a starting point
         const offsetLat = (Math.random() - 0.5) * 0.03;
         const offsetLng = (Math.random() - 0.5) * 0.03;
 
