@@ -5,7 +5,14 @@
 </template>
 
 <script setup lang="ts">
-// Main app entry
+import { onMounted } from 'vue';
+import { useSyncStore } from '@/stores/sync';
+
+const syncStore = useSyncStore();
+
+onMounted(() => {
+  syncStore.startHealthCheck();
+});
 </script>
 
 <style>

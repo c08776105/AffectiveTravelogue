@@ -1,6 +1,5 @@
 import { defineStore } from "pinia";
 import { ref, computed, watchEffect } from "vue";
-import { apiClient } from "@/api/client";
 import { sha256Hash } from "@/utils/hashUtils";
 import type { Route, Walk, Observation, LatLng } from "@/types";
 

@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import { apiClient } from "@/api/client";
+import { apiService } from "@/api/services";
+import { useSyncStore } from "@/stores/sync";
 import type { Route, Walk, Observation, LatLng } from "@/types";
 
 // Mock initial history
@@ -49,14 +50,17 @@ export const useRouteStore = defineStore("route", () => {
 
   // Actions
   const createRoute = async (routeData: any) => {
+    const syncStore = useSyncStore();
     try {
-      const response = await apiClient.post("/routes", routeData);
-      currentRoute.value = response.data;
+      const dbRoute = await apiService.createRoute(routeData);
+      currentRoute.value = dbRoute;
       currentPath.value = []; // Reset path for new route
       waypoints.value = [];
-      return response.data;
+      return dbRoute;
     } catch (e) {
       console.warn("Backend not available. Using mock route.", e);
+      // We could enqueue this: syncStore.enqueueTask({ type: 'createRoute', payload: routeData });
+      syncStore.isOnline = false;
       currentRoute.value = { id: "mock-route-" + Date.now(), ...routeData };
       currentPath.value = [];
       waypoints.value = [];
@@ -71,14 +75,17 @@ export const useRouteStore = defineStore("route", () => {
   }) => {
     if (!currentRoute.value) return;
 
-    try {
-      const response = await apiClient.post("/waypoint", {
-        route_id: currentRoute.value.id,
-        ...waypoint,
-        timestamp: new Date().toISOString(),
-      });
+    const syncStore = useSyncStore();
+    const payload = {
+      routeId: currentRoute.value.id,
+      latitude: waypoint.latitude,
+      longitude: waypoint.longitude,
+      textNote: waypoint.text_note
+    };
 
-      const newPoint = response.data;
+    try {
+      const newPoint = await apiService.submitWaypoint(payload);
+
       waypoints.value.push(newPoint);
       currentPath.value.push({
         lat: waypoint.latitude,
@@ -87,7 +94,14 @@ export const useRouteStore = defineStore("route", () => {
       return newPoint;
     } catch (error) {
       console.warn("Failed to submit waypoint, mocking success:", error);
-      const newPoint = { id: "mock-wp-" + Date.now(), ...waypoint };
+      syncStore.isOnline = false;
+
+      syncStore.enqueueTask({
+        type: 'submitWaypoint',
+        payload: payload
+      });
+
+      const newPoint = { id: "mock-wp-" + Date.now(), ...waypoint, routeId: payload.routeId, storedAt: new Date().toISOString() };
       waypoints.value.push(newPoint);
       currentPath.value.push({
         lat: waypoint.latitude,
@@ -122,13 +136,18 @@ export const useRouteStore = defineStore("route", () => {
   const finaliseRoute = async () => {
     if (!currentRoute.value) return;
 
+    const syncStore = useSyncStore();
+    const payload = {
+      id: currentRoute.value.id,
+      data: { status: 'completed' }
+    };
+
     try {
-      await apiClient.post("/route/finalise", {
-        route_id: currentRoute.value.id,
-        end_time: new Date().toISOString(),
-      });
+      await apiService.finaliseRoute(payload.id, payload.data);
     } catch (error) {
       console.warn("Failed to finalise route, mocking success:", error);
+      syncStore.isOnline = false;
+      syncStore.enqueueTask({ type: 'finaliseRoute', payload });
     }
 
     // Add to local history for immediate feedback
