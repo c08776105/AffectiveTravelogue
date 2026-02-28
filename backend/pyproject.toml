@@ -19,4 +19,5 @@ dependencies = [
     "scipy>=1.17.0",
     "uvicorn>=0.40.0",
     "vadersentiment>=3.3.2",
+    "httpx>=0.28.1",
 ]

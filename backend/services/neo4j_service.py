@@ -146,5 +146,18 @@ class Neo4jService:
             )
             return self._format_node(result.single()["e"])
 
+    def neo4j_service_accessible(self) -> str:
+        try:
+            with self.driver.session() as session:
+                query = "RETURN 1 AS heartbeat"
+                result = session.run(query)
+                record = result.single()
+                if record and record["heartbeat"] == 1:
+                    return "up"
+                return "down"
+        except Exception as e:
+            logger.error(f"Neo4j connectivity failed: {e}")
+            return "down"
+
 
 neo4j_service = Neo4jService()

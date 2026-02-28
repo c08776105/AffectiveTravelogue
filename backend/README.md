@@ -1,3 +1,13 @@
+Affective Travelogue Backend
+==============
+
+## 1. Running
+Ensure the `uv` application is installed
+Start the application using:
+```
+uv run --env-file ../.env uvicorn main:app --port 8000
+```
+
 TODO items
 ==============
 

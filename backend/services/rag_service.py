@@ -73,5 +73,21 @@ class RAGService:
             logger.error(f"LangChain generation failed: {e}")
             return f"Generation failed: {str(e)}"
 
+    def llm_accessible(self) -> str:
+        try:
+            response = requests.get(f"{settings.OLLAMA_HOST}/api/tags", timeout=5.0)
+            if response.status_code == 200:
+                models = [m["name"] for m in response.json().get("models", [])]
+                print(response.json())
+                model_found = any(settings.LLM_MODEL in m for m in models)
+                if model_found:
+                    return "up"
+                else:
+                    return "model not found"
+            return "down"
+        except Exception as e:
+            logger.error(f"LLM service connectivity failed: {e}")
+            return "down"
+
 
 rag_service = RAGService()
