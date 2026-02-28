@@ -41,6 +41,11 @@ async def health_check():
     }
 
 
+@app.get("/api/heartbeat")
+async def heartbeat():
+    return {}
+
+
 @app.on_event("startup")
 async def startup_event():
     logger.info("Starting Affective Travelogue Backend...")

@@ -234,6 +234,16 @@ paths:
           content:
             application/json:
               schema: {}
+  /heartbeat:
+    get:
+      summary: Heartbeat
+      operationId: heartbeat_health_get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
 components:
   schemas:
     EvaluationCreate:
