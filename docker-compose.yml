@@ -1,6 +1,24 @@
-version: '3.9'
+version: "3.9"
 
 services:
+  caddy:
+    image: caddy:latest
+    container_name: caddy-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/etc/caddy/certs:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - app-network
+    depends_on:
+      - backend
+      - frontend
+
   # Frontend
   frontend:
     build:
@@ -8,7 +26,7 @@ services:
       dockerfile: Dockerfile
     container_name: affective-frontend
     ports:
-      - "80:80"
+      - "5173:80"
     environment:
       - VITE_API_URL=http://backend:8000
     depends_on:
