@@ -2,13 +2,13 @@
   <v-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" fullscreen transition="dialog-bottom-transition">
     <v-card class="bg-surface">
       <v-toolbar color="surface" density="compact">
-        <v-btn icon="mdi-close" @click="$emit('update:modelValue', false)"></v-btn>
+        <v-btn icon="mdi-close" @click="close"></v-btn>
         <v-toolbar-title class="text-subtitle-1">Add Observation</v-toolbar-title>
         <v-spacer></v-spacer>
-        <v-btn 
-            color="primary" 
-            variant="text" 
-            @click="saveObservation" 
+        <v-btn
+            color="primary"
+            variant="text"
+            @click="saveObservation"
             :disabled="!hasContent"
         >
             Save
@@ -23,24 +23,24 @@
         <v-tabs v-model="activeTab" color="primary" grow class="mb-6">
           <v-tab value="text">
             <v-icon start>mdi-text</v-icon>
-            Text
-          </v-tab>
-          <v-tab value="voice">
-            <v-icon start>mdi-microphone</v-icon>
-            Voice
+            Reflect
           </v-tab>
           <v-tab value="image">
             <v-icon start>mdi-camera</v-icon>
-            Image
+            Capture
           </v-tab>
         </v-tabs>
 
         <v-window v-model="activeTab">
-          <!-- Text Tab -->
+
+          <!-- Text / reflection tab -->
           <v-window-item value="text">
+            <p class="text-caption text-medium-emphasis mb-3">
+                Tap a prompt to use it, or write freely below.
+            </p>
             <div class="d-flex flex-wrap gap-2 mb-4">
-                <v-chip 
-                    v-for="prompt in prompts" 
+                <v-chip
+                    v-for="prompt in prompts"
                     :key="prompt"
                     @click="noteText = prompt"
                     variant="outlined"
@@ -53,8 +53,8 @@
             </div>
             <v-textarea
               v-model="noteText"
-              label="Your notes"
-              placeholder="Write your observations..."
+              label="Your observation"
+              placeholder="Write your thoughts…"
               variant="outlined"
               rows="6"
               auto-grow
@@ -62,45 +62,21 @@
             ></v-textarea>
           </v-window-item>
 
-          <!-- Voice Tab -->
-          <v-window-item value="voice">
-            <div class="text-center py-8">
-              <v-btn
-                :color="isRecordingVoice ? 'error' : 'primary'"
-                size="x-large"
-                icon
-                class="mb-4 pulse-on-record"
-                :class="{ 'pulse-animation': isRecordingVoice }"
-                @click="toggleVoiceRecording"
-                :loading="isProcessingAudio"
-                width="80"
-                height="80"
-              >
-                <v-icon size="40">{{ isRecordingVoice ? 'mdi-stop' : 'mdi-microphone' }}</v-icon>
-              </v-btn>
-              
-              <div class="text-h6 font-weight-medium">
-                {{ isRecordingVoice ? formatDuration(voiceRecordingTime) : 'Tap to Record' }}
-              </div>
-              
-              <v-expand-transition>
-                <div v-if="voiceData" class="mt-4 text-success d-flex align-center justify-center">
-                    <v-icon start color="success">mdi-check-circle</v-icon>
-                    Audio captured
-                </div>
-              </v-expand-transition>
-            </div>
-          </v-window-item>
-
-          <!-- Image Tab -->
+          <!-- Image / capture tab -->
           <v-window-item value="image">
-            <div v-if="!imagePreview" class="text-center py-8 border-dashed rounded-lg" @click="$refs.fileInput.click()">
+            <div
+                v-if="!imagePreview"
+                class="text-center py-8 border-dashed rounded-lg"
+                @click="triggerCamera"
+            >
                 <v-icon size="64" color="medium-emphasis" class="mb-2">mdi-camera-plus</v-icon>
-                <div class="text-body-1 text-medium-emphasis">Tap to upload photo</div>
+                <div class="text-body-1 text-medium-emphasis">Tap to take a photo</div>
+                <!-- capture=environment opens the rear camera directly on mobile -->
                 <input
                     ref="fileInput"
                     type="file"
                     accept="image/*"
+                    capture="environment"
                     @change="handlePhotoUpload"
                     style="display: none"
                 />
@@ -108,21 +84,25 @@
 
             <div v-else class="position-relative">
                 <v-img :src="imagePreview" height="300" cover class="rounded-lg mb-4"></v-img>
-                <v-btn 
-                    icon="mdi-close" 
-                    color="error" 
-                    size="small" 
+                <v-btn
+                    icon="mdi-close"
+                    color="error"
+                    size="small"
                     class="position-absolute top-0 right-0 ma-2"
                     @click="clearImage"
                 ></v-btn>
-                <v-text-field
+                <v-textarea
                     v-model="imageCaption"
-                    label="Caption"
+                    label="What does this image mean to you?"
+                    placeholder="Describe the atmosphere, memory, or tension captured here…"
                     variant="outlined"
                     density="compact"
-                ></v-text-field>
+                    rows="3"
+                    auto-grow
+                ></v-textarea>
             </div>
           </v-window-item>
+
         </v-window>
       </div>
     </v-card>
@@ -130,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed } from 'vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -139,99 +119,38 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
-  'save-observation': [observation: { type: string; text?: string; imageData?: string; audioData?: string; caption?: string }]
+  'save-observation': [observation: { type: string; text?: string; imageData?: string; caption?: string }]
 }>()
 
-const activeTab = ref<'text' | 'voice' | 'image'>('text')
+const activeTab = ref<'text' | 'image'>('text')
 const noteText = ref('')
-const voiceData = ref('')
-const isRecordingVoice = ref(false)
-const voiceRecordingTime = ref(0)
-const isProcessingAudio = ref(false)
 const imagePreview = ref('')
 const imageData = ref('')
 const imageCaption = ref('')
 const fileInput = ref<HTMLInputElement>()
 
-let mediaRecorder: MediaRecorder | null = null
-let audioChunks: Blob[] = []
-let voiceTimer: number | null = null
-
 const prompts = [
-    "👁️ What do you see?",
-    "👃 What do you smell?",
-    "👂 What do you hear?",
-    "💭 How do you feel?"
+    "What mood does this space impose on you?",
+    "What pulls you forward, or makes you want to linger?",
+    "Whose space is this — and how do you know?",
+    "What traces of other lives can you sense here?",
+    "How does the architecture want you to move?",
+    "What is the texture of the atmosphere around you?",
+    "What memory does this place bring to the surface?",
+    "If you followed desire rather than direction, where would you go?",
+    "What sounds reveal where power lies here?",
+    "What would you find if you took the unexpected path?",
 ]
 
-const hasContent = computed(() => {
-  return noteText.value || voiceData.value || imageData.value
-})
+const hasContent = computed(() => noteText.value.trim().length > 0 || imageData.value.length > 0)
 
-function formatDuration(seconds: number) {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-}
-
-function toggleVoiceRecording() {
-  if (isRecordingVoice.value) {
-    stopVoiceRecording()
-  } else {
-    startVoiceRecording()
-  }
-}
-
-async function startVoiceRecording() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    mediaRecorder = new MediaRecorder(stream)
-    audioChunks = []
-
-    mediaRecorder.ondataavailable = (event) => {
-      audioChunks.push(event.data)
-    }
-
-    mediaRecorder.onstop = () => {
-      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' })
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        voiceData.value = e.target?.result as string
-        isProcessingAudio.value = false
-      }
-      reader.readAsDataURL(audioBlob)
-      stream.getTracks().forEach((track) => track.stop())
-    }
-
-    mediaRecorder.start()
-    isRecordingVoice.value = true
-    voiceRecordingTime.value = 0
-
-    voiceTimer = window.setInterval(() => {
-      voiceRecordingTime.value++
-    }, 1000)
-  } catch (error) {
-    console.error('Error accessing microphone:', error)
-    alert('Unable to access microphone. Please check permissions.')
-  }
-}
-
-function stopVoiceRecording() {
-  if (mediaRecorder && isRecordingVoice.value) {
-    isProcessingAudio.value = true
-    mediaRecorder.stop()
-    isRecordingVoice.value = false
-    if (voiceTimer) {
-      clearInterval(voiceTimer)
-      voiceTimer = null
-    }
-  }
+function triggerCamera() {
+    fileInput.value?.click()
 }
 
 function handlePhotoUpload(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
-
   if (file) {
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -247,56 +166,44 @@ function clearImage() {
   imagePreview.value = ''
   imageData.value = ''
   imageCaption.value = ''
-  if (fileInput.value) {
-    fileInput.value.value = ''
-  }
+  if (fileInput.value) fileInput.value.value = ''
 }
 
 function saveObservation() {
-  const observation: any = {}
+  let observation: { type: string; text?: string; imageData?: string; caption?: string } | null = null
 
-  if (activeTab.value === 'text' && noteText.value) {
-    observation.type = 'text'
-    observation.text = noteText.value
-  } else if (activeTab.value === 'voice' && voiceData.value) {
-    observation.type = 'voice'
-    observation.audioData = voiceData.value
+  if (activeTab.value === 'text' && noteText.value.trim()) {
+    observation = { type: 'text', text: noteText.value.trim() }
   } else if (activeTab.value === 'image' && imageData.value) {
-    observation.type = 'image'
-    observation.imageData = imageData.value
-    if (imageCaption.value) {
-      observation.caption = imageCaption.value
-    }
+    observation = { type: 'image', imageData: imageData.value }
+    if (imageCaption.value.trim()) observation.caption = imageCaption.value.trim()
   }
 
-  if (Object.keys(observation).length > 0) {
+  if (observation) {
     emit('save-observation', observation)
-    emit('update:modelValue', false)
-    // Reset state
-    noteText.value = ''
-    voiceData.value = ''
-    imageData.value = ''
-    imagePreview.value = ''
-    activeTab.value = 'text'
+    close()
   }
 }
 
-onUnmounted(() => {
-    if (voiceTimer) clearInterval(voiceTimer)
-    if (mediaRecorder && isRecordingVoice.value) {
-        mediaRecorder.stream.getTracks().forEach(t => t.stop())
-    }
-})
+function close() {
+  emit('update:modelValue', false)
+  // Reset for next use
+  noteText.value = ''
+  imageData.value = ''
+  imagePreview.value = ''
+  imageCaption.value = ''
+  activeTab.value = 'text'
+}
 </script>
 
 <style scoped>
 .border-dashed {
     border: 2px dashed rgba(255, 255, 255, 0.2);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: border-color 0.2s;
 }
 .border-dashed:hover {
-    border-color: var(--v-primary-base);
+    border-color: rgb(var(--v-theme-primary));
     background: rgba(255, 255, 255, 0.05);
 }
 </style>

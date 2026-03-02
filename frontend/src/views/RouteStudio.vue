@@ -96,35 +96,174 @@
 
             <!-- Start Actions -->
             <div
-                class="position-absolute bottom-0 left-0 right-0 z-10 pa-4 pb-8 d-flex gap-4"
+                class="position-absolute bottom-0 left-0 right-0 z-10 pa-4 pb-8"
             >
-                <v-btn
-                    v-if="planningMode === 'route' && startPoint"
-                    color="surface"
-                    height="56"
-                    class="flex-1 rounded-xl font-weight-bold text-error"
-                    elevation="3"
-                    @click="resetRoute"
+                <!-- Dérive Settings (Route Mode only) -->
+                <v-card
+                    v-if="planningMode === 'route'"
+                    class="pa-4 mb-3 rounded-xl"
+                    elevation="2"
                 >
-                    Reset
-                </v-btn>
+                    <div
+                        class="text-overline font-weight-bold text-primary mb-3"
+                        style="font-size: 0.65rem; letter-spacing: 0.08em"
+                    >
+                        Dérive Settings
+                    </div>
 
-                <v-btn
-                    block
-                    height="56"
-                    color="primary"
-                    class="flex-1 rounded-xl font-weight-bold shadow-lg"
-                    elevation="4"
-                    @click="startWalk"
-                    :disabled="
-                        planningMode === 'route' && (!startPoint || !endPoint)
-                    "
-                >
-                    <v-icon start size="24">{{
-                        planningMode === "free" ? "mdi-play" : "mdi-navigation"
-                    }}</v-icon>
-                    Start {{ planningMode === "free" ? "Adventure" : "Route" }}
-                </v-btn>
+                    <div class="mb-2">
+                        <div class="d-flex justify-space-between align-center mb-1">
+                            <span class="text-caption text-medium-emphasis">Deviation Points</span>
+                            <v-chip size="x-small" color="primary" variant="tonal">
+                                {{ derivePoints }}
+                            </v-chip>
+                        </div>
+                        <v-slider
+                            v-model="derivePoints"
+                            :min="1"
+                            :max="5"
+                            :step="1"
+                            hide-details
+                            density="compact"
+                            color="primary"
+                            class="mt-n1"
+                        />
+                    </div>
+
+                    <div>
+                        <div class="d-flex justify-space-between align-center mb-1">
+                            <span class="text-caption text-medium-emphasis">Deviation Distance</span>
+                            <v-chip size="x-small" color="secondary" variant="tonal">
+                                {{ deviationMeters }}m
+                            </v-chip>
+                        </div>
+                        <v-slider
+                            v-model="deviationMeters"
+                            :min="100"
+                            :max="2000"
+                            :step="100"
+                            hide-details
+                            density="compact"
+                            color="secondary"
+                            class="mt-n1"
+                        />
+                    </div>
+                </v-card>
+
+                <!-- Action Buttons -->
+
+                <!-- Free walk -->
+                <template v-if="planningMode === 'free'">
+                    <v-btn
+                        block
+                        height="56"
+                        color="primary"
+                        class="rounded-xl font-weight-bold shadow-lg"
+                        elevation="4"
+                        @click="startWalk"
+                    >
+                        <v-icon start size="24">mdi-play</v-icon>
+                        Start Adventure
+                    </v-btn>
+                </template>
+
+                <!-- Route plan: both points placed, route not yet calculated -->
+                <template v-else-if="startPoint && endPoint && !routeCalculated">
+                    <div class="d-flex gap-4">
+                        <v-btn
+                            color="surface"
+                            height="56"
+                            class="rounded-xl font-weight-bold text-error"
+                            elevation="3"
+                            @click="resetRoute"
+                        >
+                            Reset
+                        </v-btn>
+                        <v-btn
+                            height="56"
+                            color="primary"
+                            class="flex-1 rounded-xl font-weight-bold shadow-lg"
+                            elevation="4"
+                            @click="calculateRoute"
+                        >
+                            <v-icon start size="22">mdi-map-marker-path</v-icon>
+                            Calculate Route
+                        </v-btn>
+                    </div>
+                </template>
+
+                <!-- Route plan: route calculated — recalculate or start -->
+                <template v-else-if="startPoint && endPoint && routeCalculated">
+                    <div class="d-flex gap-4">
+                        <v-btn
+                            color="surface"
+                            height="56"
+                            class="rounded-xl font-weight-bold text-error"
+                            elevation="3"
+                            @click="resetRoute"
+                        >
+                            Reset
+                        </v-btn>
+                        <v-btn
+                            height="56"
+                            variant="outlined"
+                            color="primary"
+                            class="rounded-xl font-weight-bold"
+                            @click="calculateRoute"
+                        >
+                            <v-icon start size="20">mdi-refresh</v-icon>
+                            Recalculate
+                        </v-btn>
+                        <v-btn
+                            height="56"
+                            color="primary"
+                            class="flex-1 rounded-xl font-weight-bold shadow-lg"
+                            elevation="4"
+                            @click="startWalk"
+                        >
+                            <v-icon start size="22">mdi-navigation</v-icon>
+                            Start Route
+                        </v-btn>
+                    </div>
+                </template>
+
+                <!-- Route plan: placing points (start only or neither) -->
+                <template v-else>
+                    <div class="d-flex gap-4">
+                        <v-btn
+                            v-if="startPoint"
+                            color="surface"
+                            height="56"
+                            class="rounded-xl font-weight-bold text-error"
+                            elevation="3"
+                            @click="resetRoute"
+                        >
+                            Reset
+                        </v-btn>
+                        <!-- Only show when no start placed and geolocation available -->
+                        <v-btn
+                            v-if="!startPoint && canLocate"
+                            height="56"
+                            variant="outlined"
+                            color="primary"
+                            class="rounded-xl font-weight-bold"
+                            @click="useCurrentLocationAsStart"
+                        >
+                            <v-icon start size="20">mdi-crosshairs-gps</v-icon>
+                            Use My Location
+                        </v-btn>
+                        <v-btn
+                            height="56"
+                            color="primary"
+                            class="flex-1 rounded-xl font-weight-bold shadow-lg"
+                            elevation="4"
+                            disabled
+                        >
+                            <v-icon start size="22">mdi-navigation</v-icon>
+                            Start Route
+                        </v-btn>
+                    </div>
+                </template>
             </div>
         </template>
 
@@ -133,18 +272,14 @@
             <div
                 class="position-absolute bottom-0 left-0 right-0 z-20 bg-surface rounded-t-xl elevation-10 pa-6 pb-8 safe-area-bottom"
             >
-                <!-- Recording Indicator -->
+                <!-- Walk status bar -->
                 <div
-                    class="d-flex align-center justify-space-between mb-6 pa-3 bg-red-lighten-5 rounded-lg border-thin-red"
+                    class="d-flex align-center justify-space-between mb-6 pa-3 bg-primary-lighten-5 rounded-lg"
+                    style="border: 1px solid rgba(var(--v-theme-primary), 0.2)"
                 >
                     <div class="d-flex align-center">
-                        <div
-                            class="pulse-animation rounded-circle bg-error mr-3"
-                            style="width: 12px; height: 12px"
-                        ></div>
-                        <span class="text-body-2 font-weight-bold text-error"
-                            >Live Recording</span
-                        >
+                        <v-icon color="primary" class="mr-2" size="20">mdi-walk</v-icon>
+                        <span class="text-body-2 font-weight-bold text-primary">Walking</span>
                     </div>
                     <div class="text-h5 font-weight-mono font-weight-black">
                         {{ formattedDuration }}
@@ -187,7 +322,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, shallowRef } from "vue";
+import { ref, onMounted, onUnmounted, shallowRef } from "vue";
 import { useRouter } from "vue-router";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -195,7 +330,6 @@ import MapLibreGlDirections from "@maplibre/maplibre-gl-directions";
 import ObservationDialog from "@/components/ObservationDialog.vue";
 import { useRouteStore } from "@/stores/route";
 import { useTimer } from "@/utils/useTimer";
-import { storeToRefs } from "pinia";
 import type { LatLng } from "@/types";
 
 const router = useRouter();
@@ -218,8 +352,16 @@ const startPoint = ref<{ lat: number; lng: number } | null>(null);
 const endPoint = ref<{ lat: number; lng: number } | null>(null);
 const markers = ref<maplibregl.Marker[]>([]);
 
-// Mock current location (Dublin)
+// Dérive configuration
+const derivePoints = ref(1);
+const deviationMeters = ref(500);
+const routeCalculated = ref(false);
+
 const currentLocation = ref({ lat: 53.3498, lng: -6.2603 });
+
+// Live location tracking during walk
+let geoWatchId: number | null = null;
+const userLocationMarker = shallowRef<maplibregl.Marker | null>(null);
 
 onMounted(() => {
     if (!navigator.geolocation) {
@@ -227,6 +369,7 @@ onMounted(() => {
     }
 
     map.value = new maplibregl.Map({
+        // Default center used only until geolocation resolves
         container: "map-container",
         style: "https://tiles.openfreemap.org/styles/liberty",
         center: [-6.2603, 53.3498],
@@ -235,6 +378,18 @@ onMounted(() => {
     });
 
     map.value.on("click", handleMapClick);
+
+    // Fly to the user's real position as soon as the map is ready
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                currentLocation.value = { lat: latitude, lng: longitude };
+                map.value?.flyTo({ center: [longitude, latitude], zoom: 15 });
+            },
+            () => { /* stay on default centre */ },
+        );
+    }
 
     map.value.on("load", () => {
         if (isDestroyed.value) return; // Abort MapLibre plugins if component unmounted before map tiles finished loading
@@ -281,33 +436,53 @@ function handleMapClick(e: maplibregl.MapMouseEvent) {
     } else if (!endPoint.value) {
         endPoint.value = { lat, lng };
         addMarker(lng, lat, "#EC4899"); // Secondary pink
-
-        // Calculate dérive jitter (forced deviation)
-        // Midpoint
-        const midLat = (startPoint.value.lat + endPoint.value.lat) / 2;
-        const midLng = (startPoint.value.lng + endPoint.value.lng) / 2;
-
-        // Random offset: roughly 0.5km to 1.5km
-        // 1 degree latitude is approx 111km, so 0.01 is about 1.1km.
-        // Used 0.03 (3.3km) of a deviation for a starting point
-        const offsetLat = (Math.random() - 0.5) * 0.03;
-        const offsetLng = (Math.random() - 0.5) * 0.03;
-
-        const jitterPoint = {
-            lat: midLat + offsetLat,
-            lng: midLng + offsetLng,
-        };
-
-        // Ensure the routing plugin includes this jittered point
-        directions.value.interactive = true;
-        directions.value.setWaypoints([
-            [startPoint.value.lng, startPoint.value.lat], // Start point
-            [jitterPoint.lng, jitterPoint.lat], // Jitter deviation
-            [endPoint.value.lng, endPoint.value.lat], // End point
-        ]);
-
-        drawRouteLine(); // Fallback dashed line connecting the 3 points
+        // Route is not calculated yet — user must press Calculate Route
     }
+}
+
+function useCurrentLocationAsStart() {
+    if (startPoint.value) return; // already placed
+    startPoint.value = { ...currentLocation.value };
+    addMarker(currentLocation.value.lng, currentLocation.value.lat, "#7C3AED");
+}
+
+function computeDeriveWaypoints(): [number, number][] {
+    if (!startPoint.value || !endPoint.value) return [];
+
+    const waypoints: [number, number][] = [
+        [startPoint.value.lng, startPoint.value.lat],
+    ];
+
+    const n = derivePoints.value;
+    for (let i = 1; i <= n; i++) {
+        const fraction = i / (n + 1);
+        const baseLat =
+            startPoint.value.lat +
+            fraction * (endPoint.value.lat - startPoint.value.lat);
+        const baseLng =
+            startPoint.value.lng +
+            fraction * (endPoint.value.lng - startPoint.value.lng);
+
+        // Convert metres to degrees (approximate)
+        const latDeg = deviationMeters.value / 111000;
+        const lngDeg =
+            deviationMeters.value /
+            (111000 * Math.cos((baseLat * Math.PI) / 180));
+
+        const jitteredLat = baseLat + (Math.random() - 0.5) * 2 * latDeg;
+        const jitteredLng = baseLng + (Math.random() - 0.5) * 2 * lngDeg;
+        waypoints.push([jitteredLng, jitteredLat]);
+    }
+
+    waypoints.push([endPoint.value.lng, endPoint.value.lat]);
+    return waypoints;
+}
+
+function calculateRoute() {
+    if (!startPoint.value || !endPoint.value || !directions.value) return;
+    directions.value.setWaypoints(computeDeriveWaypoints());
+    drawRouteLine();
+    routeCalculated.value = true;
 }
 
 function addMarker(lng: number, lat: number, color: string) {
@@ -326,18 +501,13 @@ function drawRouteLine() {
         [endPoint.value.lng, endPoint.value.lat],
     ];
 
-    // Attempt to inject the jitter point for the visual dashed line if available
+    // Use all waypoints set on the directions plugin for the dashed preview
     try {
-        if (
-            directions.value &&
-            directions.value.getWaypoints &&
-            directions.value.getWaypoints().length === 3
-        ) {
-            coords = [
-                [startPoint.value.lng, startPoint.value.lat],
-                directions.value.getWaypoints()[1].geometry.coordinates,
-                [endPoint.value.lng, endPoint.value.lat],
-            ];
+        if (directions.value?.getWaypoints) {
+            const wps = directions.value.getWaypoints();
+            if (wps.length >= 2) {
+                coords = wps.map((wp: any) => wp.geometry.coordinates);
+            }
         }
     } catch (e) {
         /* ignore */
@@ -381,36 +551,69 @@ function drawRouteLine() {
 function resetRoute() {
     startPoint.value = null;
     endPoint.value = null;
+    routeCalculated.value = false;
     markers.value.forEach((m) => m.remove());
     markers.value = [];
+    if (directions.value) directions.value.clear();
     if (map.value?.getLayer("route")) map.value.removeLayer("route");
     if (map.value?.getSource("route")) map.value.removeSource("route");
 }
 
 async function startWalk() {
-    // Start new route via store
+    const isRoutePlan = planningMode.value === "route" && endPoint.value;
     await routeStore.createRoute({
-        startLat: currentLocation.value.lat, // Should be real GPS
+        name: `Journey ${new Date().toLocaleDateString()}`,
+        startLat: currentLocation.value.lat,
         startLon: currentLocation.value.lng,
-        endLat:
-            planningMode.value === "route" && endPoint.value
-                ? endPoint.value.lat
-                : currentLocation.value.lat,
-        endLon:
-            planningMode.value === "route" && endPoint.value
-                ? endPoint.value.lng
-                : currentLocation.value.lng,
+        endLat: isRoutePlan ? endPoint.value!.lat : currentLocation.value.lat,
+        endLon: isRoutePlan ? endPoint.value!.lng : currentLocation.value.lng,
+        ...(isRoutePlan && {
+            derivePoints: derivePoints.value,
+            deviationMeters: deviationMeters.value,
+        }),
     });
 
     isWalking.value = true;
     startTimer();
+
+    // Track user position and keep map centred on them
+    if (navigator.geolocation) {
+        geoWatchId = navigator.geolocation.watchPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                currentLocation.value = { lat: latitude, lng: longitude };
+
+                // Move or create the "you are here" marker
+                if (userLocationMarker.value) {
+                    userLocationMarker.value.setLngLat([longitude, latitude]);
+                } else if (map.value) {
+                    userLocationMarker.value = new maplibregl.Marker({
+                        color: "#2196F3",
+                        scale: 0.8,
+                    })
+                        .setLngLat([longitude, latitude])
+                        .addTo(map.value);
+                }
+
+                map.value?.easeTo({ center: [longitude, latitude], duration: 800 });
+            },
+            (err) => console.warn("Location tracking error:", err),
+            { enableHighAccuracy: true, maximumAge: 5000 },
+        );
+    }
 }
 
 async function endWalk() {
     isWalking.value = false;
     stopTimer();
 
-    // Slight delay for visual feedback
+    if (geoWatchId !== null) {
+        navigator.geolocation.clearWatch(geoWatchId);
+        geoWatchId = null;
+    }
+    userLocationMarker.value?.remove();
+    userLocationMarker.value = null;
+
     setTimeout(async () => {
         await routeStore.finaliseRoute();
         router.push("/journal");
@@ -433,6 +636,11 @@ function handleSaveObservation(obs: any) {
 onUnmounted(() => {
     isDestroyed.value = true;
     stopTimer();
+
+    if (geoWatchId !== null) {
+        navigator.geolocation.clearWatch(geoWatchId);
+    }
+    userLocationMarker.value?.remove();
 
     if (directions.value) {
         directions.value.interactive = false;
@@ -465,9 +673,6 @@ onUnmounted(() => {
     gap: 16px;
 }
 
-.border-thin-red {
-    border: 1px solid rgba(239, 68, 68, 0.2);
-}
 
 .safe-area-bottom {
     padding-bottom: max(24px, env(safe-area-inset-bottom));

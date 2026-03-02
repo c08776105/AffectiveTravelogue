@@ -5,6 +5,8 @@ export interface RouteCreate {
     endLat?: number | null;
     endLon?: number | null;
     distanceKm?: number | null;
+    derivePoints?: number | null;
+    deviationMeters?: number | null;
 }
 
 export interface RouteResponse {
@@ -15,6 +17,8 @@ export interface RouteResponse {
     endLat?: number | null;
     endLon?: number | null;
     distanceKm?: number | null;
+    derivePoints?: number | null;
+    deviationMeters?: number | null;
     createdAt: string;
     status: string;
 }

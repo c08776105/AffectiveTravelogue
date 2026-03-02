@@ -38,6 +38,8 @@ class Neo4jService:
                 end_lat: $end_lat,
                 end_lon: $end_lon,
                 distance_km: $distance_km,
+                derive_points: $derive_points,
+                deviation_meters: $deviation_meters,
                 created_at: $created_at,
                 status: 'active'
             })
@@ -52,6 +54,8 @@ class Neo4jService:
                 end_lat=route_data.end_lat,
                 end_lon=route_data.end_lon,
                 distance_km=route_data.distance_km,
+                derive_points=route_data.derive_points,
+                deviation_meters=route_data.deviation_meters,
                 created_at=datetime.utcnow(),
             )
             return self._format_node(result.single()["r"])

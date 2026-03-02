@@ -16,6 +16,8 @@ class RouteBase(BaseModel):
     end_lat: Optional[float] = Field(None, ge=-90, le=90)
     end_lon: Optional[float] = Field(None, ge=-180, le=180)
     distance_km: Optional[float] = Field(None, gt=0)
+    derive_points: Optional[int] = Field(None, ge=1, le=10, description="Number of dérive deviation waypoints")
+    deviation_meters: Optional[float] = Field(None, gt=0, description="Maximum deviation distance in metres")
 
 
 class RouteCreate(RouteBase):
