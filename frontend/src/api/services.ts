@@ -22,6 +22,15 @@ export const apiService = {
     },
 
     /**
+     * List all routes.
+     * @returns All routes ordered oldest-first.
+     */
+    listRoutes: async (): Promise<RouteResponse[]> => {
+        const response = await apiClient.get<RouteResponse[]>('/routes/');
+        return response.data;
+    },
+
+    /**
      * Get a route by its ID.
      * @param id The ID of the route to get.
      * @returns The route.

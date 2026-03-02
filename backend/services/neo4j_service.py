@@ -63,6 +63,12 @@ class Neo4jService:
             record = result.single()
             return self._format_node(record["r"]) if record else None
 
+    def get_all_routes(self):
+        with self.driver.session() as session:
+            query = "MATCH (r:Route) RETURN r ORDER BY r.created_at ASC"
+            result = session.run(query)
+            return [self._format_node(record["r"]) for record in result]
+
     def update_route(self, route_id: str, update_data):
         with self.driver.session() as session:
             # Build dynamic SET clause based on the input field data

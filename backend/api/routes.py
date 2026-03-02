@@ -6,6 +6,15 @@ from services.neo4j_service import neo4j_service
 router = APIRouter(prefix="/api/routes", tags=["Routes"])
 
 
+@router.get("/", response_model=list[RouteResponse])
+async def list_routes():
+    try:
+        routes = neo4j_service.get_all_routes()
+        return [dict(route) for route in routes]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/", response_model=RouteResponse, status_code=201)
 async def create_route(route: RouteCreate):
     try:

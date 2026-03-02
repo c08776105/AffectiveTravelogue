@@ -4,31 +4,12 @@ import { apiService } from "@/api/services";
 import { useSyncStore } from "@/stores/sync";
 import type { Route, Walk, Observation, LatLng } from "@/types";
 
-// Mock initial history
-const MOCK_HISTORY: Walk[] = [
-  {
-    id: "1",
-    startTime: Date.now() - 86400000 * 2,
-    endTime: Date.now() - 86400000 * 2 + 2700000,
-    title: "Urban Exploration",
-    mood: "🌆",
-    path: [
-      { lat: 53.3498, lng: -6.2603 },
-      { lat: 53.3508, lng: -6.2593 },
-    ],
-    observations: [],
-    distance: 3.2,
-    duration: 45,
-    isActive: false,
-  },
-];
-
 export const useRouteStore = defineStore("route", () => {
   // State
   const currentRoute = ref<Route | null>(null);
   const waypoints = ref<any[]>([]);
   const currentPath = ref<LatLng[]>([]);
-  const history = ref<Walk[]>(MOCK_HISTORY);
+  const history = ref<Walk[]>([]);
 
   // Getters
   const currentWalk = computed((): Walk | null => {
@@ -173,6 +154,27 @@ export const useRouteStore = defineStore("route", () => {
     waypoints.value = [];
   };
 
+  const fetchHistory = async () => {
+    const syncStore = useSyncStore();
+    try {
+      const routes = await apiService.listRoutes();
+      history.value = routes.map(r => ({
+        id: r.id,
+        title: r.name,
+        startTime: new Date(r.createdAt).getTime(),
+        mood: '🌍',
+        path: [],
+        observations: [],
+        distance: r.distanceKm ?? 0,
+        duration: 0,
+        isActive: r.status === 'active',
+      }));
+    } catch (e) {
+      console.warn('Failed to fetch route history. Using local data.', e);
+      syncStore.isOnline = false;
+    }
+  };
+
   return {
     // State
     currentRoute,
@@ -189,5 +191,6 @@ export const useRouteStore = defineStore("route", () => {
     submitWaypoint,
     submitObservation,
     finaliseRoute,
+    fetchHistory,
   };
 });
