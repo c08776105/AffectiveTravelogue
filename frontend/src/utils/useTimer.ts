@@ -10,8 +10,8 @@ export function useTimer() {
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
     })
 
-    const startTimer = () => {
-        elapsedTime.value = 0
+    const startTimer = (initialSeconds = 0) => {
+        elapsedTime.value = initialSeconds
         if (timerInterval) clearInterval(timerInterval)
         timerInterval = window.setInterval(() => {
             elapsedTime.value++

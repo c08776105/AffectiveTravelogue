@@ -293,7 +293,8 @@
                         height="64"
                         class="flex-1 rounded-xl font-weight-bold"
                         elevation="2"
-                        @click="showObservationModal = true"
+                        :loading="isLocating"
+                        @click="captureLocationAndAddNote"
                     >
                         <v-icon start size="28">mdi-plus-circle</v-icon>
                         Add Note
@@ -359,13 +360,19 @@ const routeCalculated = ref(false);
 
 const currentLocation = ref({ lat: 53.3498, lng: -6.2603 });
 
-// Live location tracking during walk
-let geoWatchId: number | null = null;
-const userLocationMarker = shallowRef<maplibregl.Marker | null>(null);
+// Location capture for notes
+const isLocating = ref(false);
 
 onMounted(() => {
     if (!navigator.geolocation) {
         canLocate.value = false;
+    }
+
+    // Resume an in-progress walk if one exists in localStorage
+    const elapsedSeconds = routeStore.restoreWalk();
+    if (elapsedSeconds !== null) {
+        isWalking.value = true;
+        startTimer(elapsedSeconds);
     }
 
     map.value = new maplibregl.Map({
@@ -575,49 +582,41 @@ async function startWalk() {
 
     isWalking.value = true;
     startTimer();
-
-    // Track user position and keep map centred on them
-    if (navigator.geolocation) {
-        geoWatchId = navigator.geolocation.watchPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                currentLocation.value = { lat: latitude, lng: longitude };
-
-                // Move or create the "you are here" marker
-                if (userLocationMarker.value) {
-                    userLocationMarker.value.setLngLat([longitude, latitude]);
-                } else if (map.value) {
-                    userLocationMarker.value = new maplibregl.Marker({
-                        color: "#2196F3",
-                        scale: 0.8,
-                    })
-                        .setLngLat([longitude, latitude])
-                        .addTo(map.value);
-                }
-
-                map.value?.easeTo({ center: [longitude, latitude], duration: 800 });
-            },
-            (err) => console.warn("Location tracking error:", err),
-            { enableHighAccuracy: true, maximumAge: 5000 },
-        );
-    }
 }
 
 async function endWalk() {
     isWalking.value = false;
     stopTimer();
 
-    if (geoWatchId !== null) {
-        navigator.geolocation.clearWatch(geoWatchId);
-        geoWatchId = null;
-    }
-    userLocationMarker.value?.remove();
-    userLocationMarker.value = null;
-
     setTimeout(async () => {
         await routeStore.finaliseRoute();
         router.push("/journal");
     }, 500);
+}
+
+function captureLocationAndAddNote() {
+    if (!navigator.geolocation) {
+        showObservationModal.value = true;
+        return;
+    }
+
+    isLocating.value = true;
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            currentLocation.value = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+            };
+            isLocating.value = false;
+            showObservationModal.value = true;
+        },
+        () => {
+            // Fall back to last known position if GPS unavailable
+            isLocating.value = false;
+            showObservationModal.value = true;
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 },
+    );
 }
 
 function handleSaveObservation(obs: any) {
@@ -636,11 +635,6 @@ function handleSaveObservation(obs: any) {
 onUnmounted(() => {
     isDestroyed.value = true;
     stopTimer();
-
-    if (geoWatchId !== null) {
-        navigator.geolocation.clearWatch(geoWatchId);
-    }
-    userLocationMarker.value?.remove();
 
     if (directions.value) {
         directions.value.interactive = false;

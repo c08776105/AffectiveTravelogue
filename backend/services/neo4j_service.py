@@ -69,9 +69,18 @@ class Neo4jService:
 
     def get_all_routes(self):
         with self.driver.session() as session:
-            query = "MATCH (r:Route) RETURN r ORDER BY r.created_at ASC"
+            query = """
+            MATCH (r:Route) WHERE r.status = 'completed'
+            OPTIONAL MATCH (r)-[:HAS_WAYPOINT]->(w:Waypoint)
+            RETURN r, count(w) AS waypoint_count ORDER BY r.created_at ASC
+            """
             result = session.run(query)
-            return [self._format_node(record["r"]) for record in result]
+            rows = []
+            for record in result:
+                node = self._format_node(record["r"])
+                node["waypoint_count"] = record["waypoint_count"]
+                rows.append(node)
+            return rows
 
     def update_route(self, route_id: str, update_data):
         with self.driver.session() as session:

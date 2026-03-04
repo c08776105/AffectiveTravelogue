@@ -2,7 +2,32 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { apiService } from "@/api/services";
 import { useSyncStore } from "@/stores/sync";
-import type { Route, Walk, Observation, LatLng } from "@/types";
+import type { Route, Walk, LatLng } from "@/types";
+
+const STORAGE_KEY = "at_active_walk";
+const WALK_EXPIRY_MS = 4 * 60 * 60 * 1000; // 4 hours
+
+interface PersistedWalk {
+  route: Route;
+  waypoints: any[];
+  path: LatLng[];
+  startedAt: number;
+}
+
+function loadFromStorage(): PersistedWalk | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const saved: PersistedWalk = JSON.parse(raw);
+    if (Date.now() - saved.startedAt >= WALK_EXPIRY_MS) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return saved;
+  } catch {
+    return null;
+  }
+}
 
 export const useRouteStore = defineStore("route", () => {
   // State
@@ -10,18 +35,22 @@ export const useRouteStore = defineStore("route", () => {
   const waypoints = ref<any[]>([]);
   const currentPath = ref<LatLng[]>([]);
   const history = ref<Walk[]>([]);
+  const walkStartedAt = ref<number | null>(null);
+
+  // Initialise reactively — true if a valid unexpired walk is in storage
+  const hasResumableWalk = ref<boolean>(loadFromStorage() !== null);
 
   // Getters
   const currentWalk = computed((): Walk | null => {
     if (!currentRoute.value) return null;
     return {
       id: currentRoute.value.id,
-      startTime: new Date().getTime(), // Approximate start time if not in route object
+      startTime: walkStartedAt.value ?? new Date().getTime(),
       title: "Current Journey",
       mood: "🚶",
       path: currentPath.value,
-      observations: [], // Mapped from waypoints if we had full observation objects
-      distance: 0, // Should be calculated from path
+      observations: [],
+      distance: 0,
       duration: 0,
       isActive: true,
     };
@@ -29,22 +58,62 @@ export const useRouteStore = defineStore("route", () => {
 
   const pastWalks = computed(() => history.value);
 
-  // Actions
+  // ── Persistence helpers ──────────────────────────────────────────────────
+
+  function persistWalk() {
+    if (!currentRoute.value) return;
+    const data: PersistedWalk = {
+      route: currentRoute.value,
+      waypoints: waypoints.value,
+      path: currentPath.value,
+      startedAt: walkStartedAt.value ?? Date.now(),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    hasResumableWalk.value = true;
+  }
+
+  function clearPersistedWalk() {
+    localStorage.removeItem(STORAGE_KEY);
+    hasResumableWalk.value = false;
+  }
+
+  // ── Actions ──────────────────────────────────────────────────────────────
+
+  /**
+   * Restore an in-progress walk from localStorage.
+   * Returns the elapsed seconds so the caller can resume the timer,
+   * or null if there is nothing to restore.
+   */
+  const restoreWalk = (): number | null => {
+    const saved = loadFromStorage();
+    if (!saved) return null;
+    currentRoute.value = saved.route;
+    waypoints.value = saved.waypoints;
+    currentPath.value = saved.path;
+    walkStartedAt.value = saved.startedAt;
+    hasResumableWalk.value = true;
+    return Math.floor((Date.now() - saved.startedAt) / 1000);
+  };
+
   const createRoute = async (routeData: any) => {
     const syncStore = useSyncStore();
+    const startedAt = Date.now();
     try {
       const dbRoute = await apiService.createRoute(routeData);
       currentRoute.value = dbRoute;
-      currentPath.value = []; // Reset path for new route
+      currentPath.value = [];
       waypoints.value = [];
+      walkStartedAt.value = startedAt;
+      persistWalk();
       return dbRoute;
     } catch (e) {
       console.warn("Backend not available. Using mock route.", e);
-      // We could enqueue this: syncStore.enqueueTask({ type: 'createRoute', payload: routeData });
       syncStore.isOnline = false;
       currentRoute.value = { id: "mock-route-" + Date.now(), ...routeData };
       currentPath.value = [];
       waypoints.value = [];
+      walkStartedAt.value = startedAt;
+      persistWalk();
       return currentRoute.value;
     }
   };
@@ -61,33 +130,28 @@ export const useRouteStore = defineStore("route", () => {
       routeId: currentRoute.value.id,
       latitude: waypoint.latitude,
       longitude: waypoint.longitude,
-      textNote: waypoint.text_note
+      textNote: waypoint.text_note,
     };
 
     try {
       const newPoint = await apiService.submitWaypoint(payload);
-
       waypoints.value.push(newPoint);
-      currentPath.value.push({
-        lat: waypoint.latitude,
-        lng: waypoint.longitude,
-      });
+      currentPath.value.push({ lat: waypoint.latitude, lng: waypoint.longitude });
+      persistWalk();
       return newPoint;
     } catch (error) {
       console.warn("Failed to submit waypoint, mocking success:", error);
       syncStore.isOnline = false;
-
-      syncStore.enqueueTask({
-        type: 'submitWaypoint',
-        payload: payload
-      });
-
-      const newPoint = { id: "mock-wp-" + Date.now(), ...waypoint, routeId: payload.routeId, storedAt: new Date().toISOString() };
+      syncStore.enqueueTask({ type: "submitWaypoint", payload });
+      const newPoint = {
+        id: "mock-wp-" + Date.now(),
+        ...waypoint,
+        routeId: payload.routeId,
+        storedAt: new Date().toISOString(),
+      };
       waypoints.value.push(newPoint);
-      currentPath.value.push({
-        lat: waypoint.latitude,
-        lng: waypoint.longitude,
-      });
+      currentPath.value.push({ lat: waypoint.latitude, lng: waypoint.longitude });
+      persistWalk();
       return newPoint;
     }
   };
@@ -106,7 +170,6 @@ export const useRouteStore = defineStore("route", () => {
       hasImage: !!observation.image,
       hasAudio: !!observation.audio,
     });
-
     return submitWaypoint({
       latitude: observation.latitude,
       longitude: observation.longitude,
@@ -118,59 +181,56 @@ export const useRouteStore = defineStore("route", () => {
     if (!currentRoute.value) return;
 
     const syncStore = useSyncStore();
-    const payload = {
-      id: currentRoute.value.id,
-      data: { status: 'completed' }
-    };
+    const payload = { id: currentRoute.value.id, data: { status: "completed" } };
 
     try {
       await apiService.finaliseRoute(payload.id, payload.data);
     } catch (error) {
       console.warn("Failed to finalise route, mocking success:", error);
       syncStore.isOnline = false;
-      syncStore.enqueueTask({ type: 'finaliseRoute', payload });
+      syncStore.enqueueTask({ type: "finaliseRoute", payload });
     }
 
-    // Add to local history for immediate feedback
+    // Add to local history immediately
     history.value.unshift({
       id: currentRoute.value.id,
-      startTime: Date.now() - currentPath.value.length * 60000, // Approximate
+      startTime: walkStartedAt.value ?? Date.now(),
       endTime: Date.now(),
-      title: "New Walk",
+      title: currentRoute.value.name ?? "New Walk",
       mood: "🌟",
       path: [...currentPath.value],
-      observations: waypoints.value.map((w) => ({
-        type: "note",
-        text: w.text_note,
-      })),
-      distance: currentPath.value.length * 0.5, // Mock calculate
-      duration: currentPath.value.length, // Mock Calculate
+      observations: waypoints.value.map((w) => ({ type: "note", text: w.text_note })),
+      distance: currentPath.value.length * 0.5,
+      duration: currentPath.value.length,
       isActive: false,
     });
 
-    // Reset current state
+    // Clear persisted state
+    clearPersistedWalk();
     currentRoute.value = null;
     currentPath.value = [];
     waypoints.value = [];
+    walkStartedAt.value = null;
   };
 
   const fetchHistory = async () => {
     const syncStore = useSyncStore();
     try {
       const routes = await apiService.listRoutes();
-      history.value = routes.map(r => ({
+      history.value = routes.map((r) => ({
         id: r.id,
         title: r.name,
         startTime: new Date(r.createdAt).getTime(),
-        mood: '🌍',
+        mood: "🌍",
         path: [],
         observations: [],
+        waypointCount: r.waypointCount ?? 0,
         distance: r.distanceKm ?? 0,
         duration: 0,
-        isActive: r.status === 'active',
+        isActive: false,
       }));
     } catch (e) {
-      console.warn('Failed to fetch route history. Using local data.', e);
+      console.warn("Failed to fetch route history. Using local data.", e);
       syncStore.isOnline = false;
     }
   };
@@ -181,6 +241,8 @@ export const useRouteStore = defineStore("route", () => {
     waypoints,
     currentPath,
     history,
+    walkStartedAt,
+    hasResumableWalk,
 
     // Getters
     currentWalk,
@@ -192,5 +254,6 @@ export const useRouteStore = defineStore("route", () => {
     submitObservation,
     finaliseRoute,
     fetchHistory,
+    restoreWalk,
   };
 });

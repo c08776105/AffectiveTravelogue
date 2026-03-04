@@ -38,6 +38,7 @@ class RouteResponse(RouteBase):
     id: str
     created_at: datetime
     status: str = "active"
+    waypoint_count: Optional[int] = Field(None, description="Number of waypoints logged on this route")
 
     model_config = ConfigDict(
         from_attributes=True, alias_generator=to_camel, populate_by_name=True

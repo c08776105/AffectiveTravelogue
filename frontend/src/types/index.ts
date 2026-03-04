@@ -30,6 +30,7 @@ export interface Walk {
     mood: string
     path: LatLng[]
     observations: Observation[]
+    waypointCount?: number
     distance: number
     duration: number
     isActive: boolean

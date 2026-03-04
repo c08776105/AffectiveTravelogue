@@ -21,6 +21,7 @@ export interface RouteResponse {
     deviationMeters?: number | null;
     createdAt: string;
     status: string;
+    waypointCount?: number | null;
 }
 
 export interface RouteUpdate {

@@ -33,6 +33,36 @@
                         </p>
                     </div>
 
+                    <!-- Resume in-progress journey -->
+                    <v-card
+                        v-if="hasResumableWalk"
+                        class="mb-6 rounded-xl"
+                        elevation="2"
+                        color="primary"
+                    >
+                        <v-card-item class="pa-5">
+                            <div class="d-flex align-center mb-3">
+                                <v-icon color="white" class="mr-2">mdi-walk</v-icon>
+                                <h2 class="text-h6 font-weight-bold text-white">
+                                    Journey in Progress
+                                </h2>
+                            </div>
+                            <p class="text-body-2 text-white mb-4" style="opacity: 0.85">
+                                You have an unfinished journey. Head back out and continue where you left off.
+                            </p>
+                            <v-btn
+                                block
+                                variant="elevated"
+                                color="white"
+                                height="44"
+                                class="text-none font-weight-bold text-primary"
+                                to="/map"
+                            >
+                                Continue Journey
+                            </v-btn>
+                        </v-card-item>
+                    </v-card>
+
                     <!-- Last Walk Card -->
                     <v-card
                         class="mb-8 rounded-xl"
@@ -63,7 +93,7 @@
                                         class="text-h6 font-weight-bold text-grey-darken-4"
                                     >
                                         {{
-                                            lastWalk?.observations?.length || 0
+                                            lastWalk?.waypointCount ?? lastWalk?.observations?.length ?? 0
                                         }}
                                     </div>
                                 </v-col>
@@ -168,8 +198,7 @@
                                             pastWalks.reduce(
                                                 (acc, walk) =>
                                                     acc +
-                                                    (walk.observations
-                                                        ?.length || 0),
+                                                    (walk.waypointCount ?? walk.observations?.length ?? 0),
                                                 0,
                                             )
                                         }}
@@ -213,7 +242,7 @@ const hidden = ref(false); // Controls visibility of FABs
 
 const profileStore = useProfileStore();
 const routeStore = useRouteStore();
-const { pastWalks } = storeToRefs(routeStore);
+const { pastWalks, hasResumableWalk } = storeToRefs(routeStore);
 const { username, avatar } = storeToRefs(profileStore);
 
 const lastWalk = computed(() => {
