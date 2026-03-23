@@ -50,6 +50,11 @@ class EvaluationService:
             human_text = human_journal[: self._MAX_CHARS]
 
             scorer = self._get_scorer()
+            tok = scorer._tokenizer
+            ai_token_count = len(tok.encode(ai_text, add_special_tokens=True))
+            human_token_count = len(tok.encode(human_text, add_special_tokens=True))
+            is_truncated = ai_token_count > 512 or human_token_count > 512
+
             P, R, F1 = scorer.score([ai_text], [human_text], verbose=False)
             return {
                 "precision": float(P[0].item()),
@@ -57,10 +62,11 @@ class EvaluationService:
                 "f1": float(F1[0].item()),
                 "is_equivalent": F1[0].item() >= 0.85,
                 "bertscore_model": settings.BERTSCORE_MODEL,
+                "is_truncated": is_truncated,
             }
         except Exception as e:
             logger.error(f"BERTScore calculation failed: {e}", exc_info=True)
-            return {"precision": 0, "recall": 0, "f1": 0, "is_equivalent": False, "bertscore_model": settings.BERTSCORE_MODEL}
+            return {"precision": 0, "recall": 0, "f1": 0, "is_equivalent": False, "bertscore_model": settings.BERTSCORE_MODEL, "is_truncated": False}
 
     def calculate_sentiment(self, text: str) -> float:
         """

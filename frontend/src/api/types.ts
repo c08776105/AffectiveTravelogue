@@ -68,6 +68,7 @@ export interface EvaluationResponse {
     bertscoreModel?: string | null;
     travelogueId?: string | null;
     promptType?: string | null;
+    isTruncated?: boolean;
 }
 
 export interface TravelogueCreate {

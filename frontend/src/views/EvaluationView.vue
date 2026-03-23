@@ -69,6 +69,16 @@
                     <p v-if="evaluation.promptType" class="text-caption text-medium-emphasis mt-1">
                         Prompt type: {{ evaluation.promptType === 'few_shot' ? 'Few Shot' : 'Zero Shot' }}
                     </p>
+                    <v-alert
+                        v-if="evaluation.isTruncated"
+                        type="warning"
+                        variant="tonal"
+                        density="compact"
+                        class="mt-3 text-caption"
+                        icon="mdi-alert-outline"
+                    >
+                        One or both texts exceeded the 512-token limit and were truncated before scoring. Results may not reflect the full content.
+                    </v-alert>
                 </v-card>
 
                 <!-- Sentiment Comparison -->

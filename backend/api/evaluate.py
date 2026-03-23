@@ -93,6 +93,7 @@ async def evaluate_route(route_id: str, travelogue_id: Optional[str] = Query(Non
         "bertscore_model": scores.get("bertscore_model"),
         "travelogue_id": travelogue_id,
         "prompt_type": travelogue_node.get("prompt_type", "zero_shot"),
+        "is_truncated": scores.get("is_truncated", False),
     }
 
     neo4j_service.store_evaluation_for_travelogue(travelogue_id, result)

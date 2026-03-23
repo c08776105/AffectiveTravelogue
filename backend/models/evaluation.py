@@ -25,5 +25,6 @@ class EvaluationResponse(BaseModel):
     bertscore_model: Optional[str] = None
     travelogue_id: Optional[str] = None
     prompt_type: Optional[str] = None
+    is_truncated: bool = False
 
     model_config = ConfigDict(from_attributes=True, alias_generator=to_camel, populate_by_name=True)

@@ -87,25 +87,29 @@ class RAGService:
         if prompt_type == "few_shot":
             example = neo4j_service.get_example_for_few_shot(route_id)
             if example:
-                wp = example["waypoint"]
-                note = self._first_note(wp)
-                if note:
-                    poi_map = osm_client.query_pois_for_waypoints([wp], radius=settings.OSM_POI_RADIUS_METERS)
-                    pois = poi_map.get(0, [])
-                    wp_context = f"Waypoint at ({wp['latitude']}, {wp['longitude']}):\n"
-                    if pois:
-                        wp_context += f"- Nearby Features: {', '.join([p['name'] + ' (' + str(p['type']) + ')' for p in pois[:5]])}\n"
-                    else:
-                        wp_context += "- Nearby Features: none recorded\n"
+                example_wps = example["waypoints"]
+                notes = [self._first_note(wp) for wp in example_wps]
+                notes = [n for n in notes if n]
+                if notes:
+                    poi_map = osm_client.query_pois_for_waypoints(example_wps, radius=settings.OSM_POI_RADIUS_METERS)
+                    context_parts = []
+                    for i, wp in enumerate(example_wps):
+                        pois = poi_map.get(i, [])
+                        wp_context = f"Waypoint at ({wp['latitude']}, {wp['longitude']}):\n"
+                        if pois:
+                            wp_context += f"- Nearby Features: {', '.join([p['name'] + ' (' + str(p['type']) + ')' for p in pois[:5]])}\n"
+                        else:
+                            wp_context += "- Nearby Features: none recorded\n"
+                        context_parts.append(wp_context)
                     example_input = (
-                        f"Route Name: {example['route_name']}\n\nSpatial Data:\n{wp_context}\n"
+                        f"Route Name: {example['route_name']}\n\nSpatial Data:\n{chr(10).join(context_parts)}\n"
                         "Write a detailed psychogeographic travelogue of this walk based only on the locations and nearby features listed above."
                     )
                     messages.append(("user", example_input))
-                    messages.append(("ai", note))
-                    logger.info(f"Few-shot: injected example from route '{example['route_name']}'")
+                    messages.append(("ai", "\n\n".join(notes)))
+                    logger.info(f"Few-shot: injected {len(notes)} waypoint(s) from route '{example['route_name']}'")
                 else:
-                    logger.info("Few-shot: example waypoint had no note, falling back to zero-shot")
+                    logger.info("Few-shot: example waypoints had no notes, falling back to zero-shot")
             else:
                 logger.info("Few-shot: no suitable example route found, falling back to zero-shot")
 

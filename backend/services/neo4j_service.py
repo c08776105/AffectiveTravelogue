@@ -216,7 +216,7 @@ class Neo4jService:
             return self._format_node(record["e"]) if record else None
 
     def get_example_for_few_shot(self, exclude_route_id: str):
-        """Fetch the first noted waypoint from a different completed route for few-shot prompting."""
+        """Fetch the first 3 noted waypoints (oldest first) from a different completed route for few-shot prompting."""
         with self.driver.session() as session:
             query = """
             MATCH (r:Route {status: 'completed'})
@@ -224,9 +224,9 @@ class Neo4jService:
             MATCH (r)-[:HAS_WAYPOINT]->(w:Waypoint)
             WHERE w.text_note IS NOT NULL AND w.text_note <> ''
             WITH r, w ORDER BY r.created_at DESC, w.stored_at ASC
-            WITH r, collect(w)[0] AS first_waypoint
-            WHERE first_waypoint IS NOT NULL
-            RETURN r.name AS route_name, first_waypoint
+            WITH r, collect(w)[0..3] AS waypoints
+            WHERE size(waypoints) > 0
+            RETURN r.name AS route_name, waypoints
             LIMIT 1
             """
             result = session.run(query, exclude_id=exclude_route_id)
@@ -235,7 +235,7 @@ class Neo4jService:
                 return None
             return {
                 "route_name": record["route_name"],
-                "waypoint": self._format_node(record["first_waypoint"]),
+                "waypoints": [self._format_node(w) for w in record["waypoints"]],
             }
 
     def store_travelogue_node(self, route_id: str, text: str, llm_model: str, prompt_type: str = "zero_shot") -> dict:
@@ -305,6 +305,7 @@ class Neo4jService:
                 bertscore_model: $bertscore_model,
                 travelogue_id: $travelogue_id,
                 prompt_type: $prompt_type,
+                is_truncated: $is_truncated,
                 created_at: $created_at
             })
             CREATE (t)-[:HAS_EVALUATION]->(e)
@@ -323,6 +324,7 @@ class Neo4jService:
                 ai_travelogue=evaluation_data.get("ai_travelogue", ""),
                 bertscore_model=evaluation_data.get("bertscore_model", ""),
                 prompt_type=evaluation_data.get("prompt_type", "zero_shot"),
+                is_truncated=evaluation_data.get("is_truncated", False),
                 created_at=datetime.utcnow(),
             )
             return self._format_node(result.single()["e"])
