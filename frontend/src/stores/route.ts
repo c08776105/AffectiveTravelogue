@@ -213,6 +213,20 @@ export const useRouteStore = defineStore("route", () => {
     walkStartedAt.value = null;
   };
 
+  const cancelRoute = async () => {
+    if (!currentRoute.value) return;
+    try {
+      await apiService.deleteRoute(currentRoute.value.id);
+    } catch (e) {
+      console.warn("Failed to delete route from backend:", e);
+    }
+    clearPersistedWalk();
+    currentRoute.value = null;
+    currentPath.value = [];
+    waypoints.value = [];
+    walkStartedAt.value = null;
+  };
+
   const fetchHistory = async () => {
     const syncStore = useSyncStore();
     try {
@@ -225,6 +239,8 @@ export const useRouteStore = defineStore("route", () => {
         path: [],
         observations: [],
         waypointCount: r.waypointCount ?? 0,
+        travelogue: r.travelogue ?? null,
+        firstNote: r.firstNote ?? null,
         distance: r.distanceKm ?? 0,
         duration: 0,
         isActive: false,
@@ -253,6 +269,7 @@ export const useRouteStore = defineStore("route", () => {
     submitWaypoint,
     submitObservation,
     finaliseRoute,
+    cancelRoute,
     fetchHistory,
     restoreWalk,
   };

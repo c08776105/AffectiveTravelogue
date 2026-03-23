@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api import evaluate, generate, routes, waypoints
+from services.eval_service import eval_service
 from services.neo4j_service import neo4j_service
 from services.rag_service import rag_service
 from utils.config import settings
@@ -49,6 +50,7 @@ async def heartbeat():
 @app.on_event("startup")
 async def startup_event():
     logger.info("Starting Affective Travelogue Backend...")
+    eval_service.warm_up()
 
 
 @app.on_event("shutdown")

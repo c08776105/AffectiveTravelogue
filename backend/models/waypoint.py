@@ -8,7 +8,7 @@ class WaypointBase(BaseModel):
 
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
-    text_note: Optional[str] = Field(None, max_length=500)
+    text_note: Optional[str] = None
     voice_blob_url: Optional[str] = None
     image_url: Optional[str] = None
 

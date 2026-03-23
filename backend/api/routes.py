@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from models.route import RouteCreate, RouteResponse, RouteUpdate
+from models.waypoint import WaypointResponse
 from services.neo4j_service import neo4j_service
 
 router = APIRouter(prefix="/api/routes", tags=["Routes"])
@@ -50,6 +51,17 @@ async def finalise_route(id: str, update: RouteUpdate):
     return dict(node)
 
 
-@router.delete("/{id}")
+@router.get("/{id}/waypoints", response_model=list[WaypointResponse])
+async def get_route_waypoints(id: str):
+    route = neo4j_service.get_route(id)
+    if not route:
+        raise HTTPException(status_code=404, detail="Route not found")
+    waypoints = neo4j_service.get_waypoints(id)
+    return [dict(w) for w in waypoints]
+
+
+@router.delete("/{id}", status_code=204)
 async def delete_route(id: str):
-    return {"message": "Delete logic not fully implemented", "id": id}
+    deleted = neo4j_service.delete_route(id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Route not found")

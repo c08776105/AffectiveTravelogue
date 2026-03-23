@@ -2,7 +2,7 @@ import { apiClient } from './client';
 import type {
     RouteCreate, RouteResponse, RouteUpdate,
     WaypointCreate, WaypointResponse,
-    EvaluationCreate, EvaluationResponse
+    EvaluationResponse, TravelogueResponse, TravelogueCreate
 } from './types';
 
 /**
@@ -70,9 +70,9 @@ export const apiService = {
         return response.data;
     },
 
-    /** 
+    /**
      * Submit a waypoint.
-     * 
+     *
      * @param data The data to submit a waypoint with.
      * @returns The submitted waypoint.
      */
@@ -82,35 +82,72 @@ export const apiService = {
     },
 
     /**
-     * Generate a travelogue.
-     * 
-     * This doesn't typically get triggered from the FE, but adding
-     * an integration here for convience during testing.
-     * 
-     * @param routeId The ID of the route to generate a travelogue for.
+     * Get all waypoints for a route.
+     * @param routeId The ID of the route.
+     * @returns The waypoints ordered by stored_at.
      */
-    generateTravelogue: async (routeId: string): Promise<void> => {
-        await apiClient.post(`/generate/${routeId}`);
+    getWaypoints: async (routeId: string): Promise<WaypointResponse[]> => {
+        const response = await apiClient.get<WaypointResponse[]>(`/routes/${routeId}/waypoints`);
+        return response.data;
     },
 
     /**
-     * Evaluate a route.
-     * 
-     * This doesn't typically get triggered from the FE, but adding
-     * an integration here for convience during testing.
-     * 
+     * Generate a new travelogue for a route.
+     * @param routeId The ID of the route to generate a travelogue for.
+     * @param config Optional model and prompt type overrides.
+     * @returns The generated travelogue.
+     */
+    generateTravelogue: async (routeId: string, config?: TravelogueCreate): Promise<TravelogueResponse> => {
+        const response = await apiClient.post<TravelogueResponse>(`/generate/${routeId}`, config ?? {});
+        return response.data;
+    },
+
+    /**
+     * Get all travelogues for a route, each with embedded evaluation if evaluated.
+     * @param routeId The ID of the route.
+     * @returns Travelogues ordered newest-first.
+     */
+    getTravelogues: async (routeId: string): Promise<TravelogueResponse[]> => {
+        const response = await apiClient.get<TravelogueResponse[]>(`/generate/${routeId}`);
+        return response.data;
+    },
+
+    /**
+     * List available Ollama models.
+     * @returns Model names and the configured default.
+     */
+    getModels: async (): Promise<{ models: string[]; default: string }> => {
+        const response = await apiClient.get<{ models: string[]; default: string }>('/generate/models');
+        return response.data;
+    },
+
+    /**
+     * Evaluate a route by comparing an AI travelogue against the human waypoint notes.
      * @param routeId The ID of the route to evaluate.
-     * @param data The data to evaluate the route with.
+     * @param travelogueId Optional specific travelogue to evaluate; uses most recent if omitted.
      * @returns The evaluation.
      */
-    evaluateRoute: async (routeId: string, data: EvaluationCreate): Promise<EvaluationResponse> => {
-        const response = await apiClient.post<EvaluationResponse>(`/evaluate/${routeId}`, data);
+    evaluateRoute: async (routeId: string, travelogueId?: string): Promise<EvaluationResponse> => {
+        const params = travelogueId ? { travelogue_id: travelogueId } : {};
+        const response = await apiClient.post<EvaluationResponse>(`/evaluate/${routeId}`, {}, { params });
+        return response.data;
+    },
+
+    /**
+     * Get the stored evaluation for a route or specific travelogue.
+     * @param routeId The ID of the route.
+     * @param travelogueId Optional specific travelogue; falls back to legacy route-level eval if omitted.
+     * @returns The stored evaluation, or throws 404 if none exists.
+     */
+    getEvaluation: async (routeId: string, travelogueId?: string): Promise<EvaluationResponse> => {
+        const params = travelogueId ? { travelogue_id: travelogueId } : {};
+        const response = await apiClient.get<EvaluationResponse>(`/evaluate/${routeId}`, { params });
         return response.data;
     },
 
     /**
      * Health check.
-     * 
+     *
      * This doesn't typically get triggered from the FE, but adding
      * an integration here for convience during testing.
      */

@@ -31,6 +31,8 @@ export interface Walk {
     path: LatLng[]
     observations: Observation[]
     waypointCount?: number
+    travelogue?: string | null
+    firstNote?: string | null
     distance: number
     duration: number
     isActive: boolean

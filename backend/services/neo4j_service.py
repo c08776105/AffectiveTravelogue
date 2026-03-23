@@ -72,13 +72,17 @@ class Neo4jService:
             query = """
             MATCH (r:Route) WHERE r.status = 'completed'
             OPTIONAL MATCH (r)-[:HAS_WAYPOINT]->(w:Waypoint)
-            RETURN r, count(w) AS waypoint_count ORDER BY r.created_at ASC
+            WITH r, count(w) AS waypoint_count,
+                 head([wp IN collect(w) WHERE wp.text_note IS NOT NULL AND wp.text_note <> '' | wp.text_note]) AS first_note
+            RETURN r, waypoint_count, first_note ORDER BY r.created_at ASC
             """
             result = session.run(query)
             rows = []
             for record in result:
                 node = self._format_node(record["r"])
                 node["waypoint_count"] = record["waypoint_count"]
+                node["first_note"] = record["first_note"]
+                logger.debug(f"Route {node.get('id')}: waypoint_count={node['waypoint_count']}, first_note={repr(node['first_note'])}")
                 rows.append(node)
             return rows
 
@@ -136,6 +140,29 @@ class Neo4jService:
             result = session.run(query, id=route_id)
             return [self._format_node(record["w"]) for record in result]
 
+    def delete_route(self, route_id: str) -> bool:
+        """Delete a route and all its connected nodes (waypoints, evaluations, travelogues)."""
+        with self.driver.session() as session:
+            query = """
+            MATCH (r:Route {id: $id})
+            OPTIONAL MATCH (r)-[:HAS_WAYPOINT]->(w:Waypoint)
+            OPTIONAL MATCH (r)-[:HAS_EVALUATION]->(e_legacy:Evaluation)
+            OPTIONAL MATCH (r)-[:HAS_TRAVELOGUE]->(t:Travelogue)
+            OPTIONAL MATCH (t)-[:HAS_EVALUATION]->(e:Evaluation)
+            DETACH DELETE r, w, e_legacy, t, e
+            RETURN count(r) AS deleted
+            """
+            result = session.run(query, id=route_id)
+            record = result.single()
+            return record and record["deleted"] > 0
+
+    def store_travelogue(self, route_id: str, travelogue: str):
+        with self.driver.session() as session:
+            query = "MATCH (r:Route {id: $id}) SET r.travelogue = $travelogue RETURN r"
+            result = session.run(query, id=route_id, travelogue=travelogue)
+            record = result.single()
+            return self._format_node(record["r"]) if record else None
+
     def store_evaluation(self, route_id: str, evaluation_data: dict):
         with self.driver.session() as session:
             query = """
@@ -147,6 +174,8 @@ class Neo4jService:
                 is_equivalent: $is_equivalent,
                 human_sentiment: $human_sentiment,
                 ai_sentiment: $ai_sentiment,
+                human_journal: $human_journal,
+                ai_travelogue: $ai_travelogue,
                 created_at: $created_at
             })
             CREATE (r)-[:HAS_EVALUATION]->(e)
@@ -161,9 +190,160 @@ class Neo4jService:
                 is_equivalent=evaluation_data["is_equivalent"],
                 human_sentiment=evaluation_data["human_sentiment"],
                 ai_sentiment=evaluation_data["ai_sentiment"],
+                human_journal=evaluation_data.get("human_journal", ""),
+                ai_travelogue=evaluation_data.get("ai_travelogue", ""),
                 created_at=datetime.utcnow(),
             )
             return self._format_node(result.single()["e"])
+
+    def delete_evaluation(self, route_id: str) -> None:
+        """Delete all Evaluation nodes attached to a route."""
+        with self.driver.session() as session:
+            query = """
+            MATCH (r:Route {id: $id})-[:HAS_EVALUATION]->(e:Evaluation)
+            DETACH DELETE e
+            """
+            session.run(query, id=route_id)
+
+    def get_evaluation(self, route_id: str):
+        with self.driver.session() as session:
+            query = """
+            MATCH (r:Route {id: $id})-[:HAS_EVALUATION]->(e:Evaluation)
+            RETURN e ORDER BY e.created_at DESC LIMIT 1
+            """
+            result = session.run(query, id=route_id)
+            record = result.single()
+            return self._format_node(record["e"]) if record else None
+
+    def get_example_for_few_shot(self, exclude_route_id: str):
+        """Fetch the first noted waypoint from a different completed route for few-shot prompting."""
+        with self.driver.session() as session:
+            query = """
+            MATCH (r:Route {status: 'completed'})
+            WHERE r.id <> $exclude_id
+            MATCH (r)-[:HAS_WAYPOINT]->(w:Waypoint)
+            WHERE w.text_note IS NOT NULL AND w.text_note <> ''
+            WITH r, w ORDER BY r.created_at DESC, w.stored_at ASC
+            WITH r, collect(w)[0] AS first_waypoint
+            WHERE first_waypoint IS NOT NULL
+            RETURN r.name AS route_name, first_waypoint
+            LIMIT 1
+            """
+            result = session.run(query, exclude_id=exclude_route_id)
+            record = result.single()
+            if not record:
+                return None
+            return {
+                "route_name": record["route_name"],
+                "waypoint": self._format_node(record["first_waypoint"]),
+            }
+
+    def store_travelogue_node(self, route_id: str, text: str, llm_model: str, prompt_type: str = "zero_shot") -> dict:
+        with self.driver.session() as session:
+            travelogue_id = str(uuid.uuid4())
+            query = """
+            MATCH (r:Route {id: $route_id})
+            CREATE (t:Travelogue {id: $id, text: $text, llm_model: $llm_model, prompt_type: $prompt_type, created_at: $created_at})
+            CREATE (r)-[:HAS_TRAVELOGUE]->(t)
+            SET r.travelogue = $text
+            RETURN t
+            """
+            result = session.run(
+                query,
+                route_id=route_id,
+                id=travelogue_id,
+                text=text,
+                llm_model=llm_model,
+                prompt_type=prompt_type,
+                created_at=datetime.utcnow(),
+            )
+            return self._format_node(result.single()["t"])
+
+    def get_travelogues(self, route_id: str) -> list:
+        with self.driver.session() as session:
+            query = """
+            MATCH (r:Route {id: $route_id})-[:HAS_TRAVELOGUE]->(t:Travelogue)
+            OPTIONAL MATCH (t)-[:HAS_EVALUATION]->(e:Evaluation)
+            RETURN t, e ORDER BY t.created_at DESC
+            """
+            result = session.run(query, route_id=route_id)
+            rows = []
+            for record in result:
+                node = self._format_node(record["t"])
+                node["evaluation"] = self._format_node(record["e"])
+                rows.append(node)
+            return rows
+
+    def get_travelogue(self, travelogue_id: str):
+        with self.driver.session() as session:
+            query = """
+            MATCH (t:Travelogue {id: $id})
+            OPTIONAL MATCH (t)-[:HAS_EVALUATION]->(e:Evaluation)
+            RETURN t, e
+            """
+            result = session.run(query, id=travelogue_id)
+            record = result.single()
+            if not record:
+                return None
+            node = self._format_node(record["t"])
+            node["evaluation"] = self._format_node(record["e"])
+            return node
+
+    def store_evaluation_for_travelogue(self, travelogue_id: str, evaluation_data: dict) -> dict:
+        with self.driver.session() as session:
+            query = """
+            MATCH (t:Travelogue {id: $travelogue_id})
+            CREATE (e:Evaluation {
+                bertscore_f1: $bertscore_f1,
+                bertscore_precision: $bertscore_precision,
+                bertscore_recall: $bertscore_recall,
+                is_equivalent: $is_equivalent,
+                human_sentiment: $human_sentiment,
+                ai_sentiment: $ai_sentiment,
+                human_journal: $human_journal,
+                ai_travelogue: $ai_travelogue,
+                bertscore_model: $bertscore_model,
+                travelogue_id: $travelogue_id,
+                prompt_type: $prompt_type,
+                created_at: $created_at
+            })
+            CREATE (t)-[:HAS_EVALUATION]->(e)
+            RETURN e
+            """
+            result = session.run(
+                query,
+                travelogue_id=travelogue_id,
+                bertscore_f1=evaluation_data["bertscore_f1"],
+                bertscore_precision=evaluation_data["bertscore_precision"],
+                bertscore_recall=evaluation_data["bertscore_recall"],
+                is_equivalent=evaluation_data["is_equivalent"],
+                human_sentiment=evaluation_data["human_sentiment"],
+                ai_sentiment=evaluation_data["ai_sentiment"],
+                human_journal=evaluation_data.get("human_journal", ""),
+                ai_travelogue=evaluation_data.get("ai_travelogue", ""),
+                bertscore_model=evaluation_data.get("bertscore_model", ""),
+                prompt_type=evaluation_data.get("prompt_type", "zero_shot"),
+                created_at=datetime.utcnow(),
+            )
+            return self._format_node(result.single()["e"])
+
+    def get_evaluation_for_travelogue(self, travelogue_id: str):
+        with self.driver.session() as session:
+            query = """
+            MATCH (t:Travelogue {id: $travelogue_id})-[:HAS_EVALUATION]->(e:Evaluation)
+            RETURN e ORDER BY e.created_at DESC LIMIT 1
+            """
+            result = session.run(query, travelogue_id=travelogue_id)
+            record = result.single()
+            return self._format_node(record["e"]) if record else None
+
+    def delete_evaluation_for_travelogue(self, travelogue_id: str) -> None:
+        with self.driver.session() as session:
+            query = """
+            MATCH (t:Travelogue {id: $travelogue_id})-[:HAS_EVALUATION]->(e:Evaluation)
+            DETACH DELETE e
+            """
+            session.run(query, travelogue_id=travelogue_id)
 
     def neo4j_service_accessible(self) -> str:
         try:

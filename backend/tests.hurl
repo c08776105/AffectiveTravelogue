@@ -3,7 +3,7 @@
 # -------------------------------------------------------------
 # 1. Create a modern Psychogeographic Route
 # -------------------------------------------------------------
-POST http://localhost:8000/api/routes/
+POST https://mini.tail1fdac7.ts.net/api/routes/
 Content-Type: application/json
 
 {
@@ -23,7 +23,7 @@ jsonpath "$.name" == "Integration Test Derive"
 # -------------------------------------------------------------
 # 2. Log Waypoint 1 (The starting mood)
 # -------------------------------------------------------------
-POST http://localhost:8000/api/waypoints/
+POST https://mini.tail1fdac7.ts.net/api/waypoints/
 Content-Type: application/json
 
 {
@@ -40,7 +40,7 @@ jsonpath "$.textNote" contains "urban ambient noise"
 # -------------------------------------------------------------
 # 3. Log Waypoint 2 (A shift in the environment)
 # -------------------------------------------------------------
-POST http://localhost:8000/api/waypoints/
+POST https://mini.tail1fdac7.ts.net/api/waypoints/
 Content-Type: application/json
 
 {
@@ -55,7 +55,7 @@ HTTP 201
 # -------------------------------------------------------------
 # 4. End the walk
 # -------------------------------------------------------------
-POST http://localhost:8000/api/routes/{{route_id}}/finalise
+POST https://mini.tail1fdac7.ts.net/api/routes/{{route_id}}/finalise
 Content-Type: application/json
 
 {
@@ -71,18 +71,29 @@ jsonpath "$.distanceKm" == 1.5
 # -------------------------------------------------------------
 # 5. Generate AI Travelogue (RAG Pipeline)
 # -------------------------------------------------------------
-POST http://localhost:8000/api/generate/{{route_id}}
+POST https://mini.tail1fdac7.ts.net/api/generate/{{route_id}}
 
 HTTP 200
 [Captures]
-ai_travelogue: jsonpath "$.travelogue"
+travelogue_id: jsonpath "$.id"
+ai_travelogue: jsonpath "$.text"
 [Asserts]
-jsonpath "$.status" == "completed"
+jsonpath "$.llmModel" exists
+jsonpath "$.createdAt" exists
+
+# -------------------------------------------------------------
+# 5b. List travelogues — should contain the one just generated
+# -------------------------------------------------------------
+GET https://mini.tail1fdac7.ts.net/api/generate/{{route_id}}
+
+HTTP 200
+[Asserts]
+jsonpath "$" isCollection
 
 # -------------------------------------------------------------
 # 6. Evaluate Semantic Equivalence
 # -------------------------------------------------------------
-POST http://localhost:8000/api/evaluate/{{route_id}}
+POST https://mini.tail1fdac7.ts.net/api/evaluate/{{route_id}}?travelogue_id={{travelogue_id}}
 Content-Type: application/json
 
 {
@@ -95,3 +106,5 @@ HTTP 200
 jsonpath "$.bertscoreF1" >= 0.0
 jsonpath "$.aiSentiment" exists
 jsonpath "$.humanSentiment" exists
+jsonpath "$.bertscoreModel" exists
+jsonpath "$.travelogueId" == "{{travelogue_id}}"

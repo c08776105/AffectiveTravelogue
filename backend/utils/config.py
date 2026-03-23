@@ -23,6 +23,7 @@ class Settings(BaseSettings):
 
     # External APIs
     OPENSTREETMAP_API_TIMEOUT: int = 10
+    OSM_POI_RADIUS_METERS: int = 50
 
     class Config:
         env_file = ".env"

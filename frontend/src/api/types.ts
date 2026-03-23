@@ -22,6 +22,8 @@ export interface RouteResponse {
     createdAt: string;
     status: string;
     waypointCount?: number | null;
+    travelogue?: string | null;
+    firstNote?: string | null;
 }
 
 export interface RouteUpdate {
@@ -52,10 +54,6 @@ export interface WaypointResponse {
     storedAt: string;
 }
 
-export interface EvaluationCreate {
-    routeId: string;
-    humanJournal: string;
-}
 
 export interface EvaluationResponse {
     bertscoreF1: number;
@@ -64,5 +62,24 @@ export interface EvaluationResponse {
     isEquivalent: boolean;
     humanSentiment: number;
     aiSentiment: number;
+    humanJournal?: string | null;
+    aiTravelogue?: string | null;
     createdAt: string;
+    bertscoreModel?: string | null;
+    travelogueId?: string | null;
+    promptType?: string | null;
+}
+
+export interface TravelogueCreate {
+    llmModel?: string | null;
+    promptType?: string;
+}
+
+export interface TravelogueResponse {
+    id: string;
+    text: string;
+    llmModel: string;
+    promptType: string;
+    createdAt: string;
+    evaluation?: EvaluationResponse | null;
 }

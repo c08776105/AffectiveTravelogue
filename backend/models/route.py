@@ -4,6 +4,8 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
+from models.evaluation import EvaluationResponse
+
 
 class RouteBase(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
@@ -34,11 +36,31 @@ class RouteUpdate(BaseModel):
     distance_km: Optional[float] = None
 
 
+class TravelogueCreate(BaseModel):
+    llm_model: Optional[str] = None
+    prompt_type: str = "zero_shot"
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+
+class TravelogueResponse(BaseModel):
+    id: str
+    text: str
+    llm_model: str
+    prompt_type: str = "zero_shot"
+    created_at: datetime
+    evaluation: Optional[EvaluationResponse] = None
+
+    model_config = ConfigDict(from_attributes=True, alias_generator=to_camel, populate_by_name=True)
+
+
 class RouteResponse(RouteBase):
     id: str
     created_at: datetime
     status: str = "active"
     waypoint_count: Optional[int] = Field(None, description="Number of waypoints logged on this route")
+    travelogue: Optional[str] = Field(None, description="AI-generated travelogue text")
+    first_note: Optional[str] = Field(None, description="First waypoint text note, for journal previews")
 
     model_config = ConfigDict(
         from_attributes=True, alias_generator=to_camel, populate_by_name=True

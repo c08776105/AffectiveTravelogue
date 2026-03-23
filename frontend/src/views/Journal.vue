@@ -16,6 +16,7 @@
                 border
                 flat
                 link
+                :to="`/journal/${walk.id}`"
             >
                 <v-card-item class="pa-5">
                     <div class="d-flex justify-space-between align-start mb-3">
@@ -25,9 +26,9 @@
                             </p>
                             <p class="text-caption text-medium-emphasis">{{ formatDate(walk.startTime) }}</p>
                         </div>
-                        <span class="text-h5">🌍</span>
+                        <v-icon size="20" color="grey-lighten-1" class="mt-1">mdi-chevron-right</v-icon>
                     </div>
-                    
+
                     <p class="text-body-2 text-grey-darken-1 overflow-hidden" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
                         {{ getSnippet(walk) }}
                     </p>
@@ -65,8 +66,16 @@ function formatDate(timestamp: number) {
 }
 
 function getSnippet(walk: Walk): string {
-    const firstNote = walk.observations.find(o => o.type === 'text' || o.type === 'note')?.content || walk.observations.find(o => o.text)?.text
-    if (firstNote) return firstNote
-    return "A journey through the quiet streets, where the patter of rain on cobblestones became a meditation..."
+    const raw = walk.firstNote
+    if (raw) {
+        try {
+            const parsed = JSON.parse(raw)
+            const text: string = parsed.text || parsed.content || raw
+            return text.slice(0, 160).trimEnd() + '…'
+        } catch {
+            return raw.slice(0, 160).trimEnd() + '…'
+        }
+    }
+    return 'No notes recorded on this walk.'
 }
 </script>

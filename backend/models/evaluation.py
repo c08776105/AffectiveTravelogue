@@ -19,6 +19,11 @@ class EvaluationResponse(BaseModel):
     is_equivalent: bool
     human_sentiment: float
     ai_sentiment: float
+    human_journal: Optional[str] = None
+    ai_travelogue: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    bertscore_model: Optional[str] = None
+    travelogue_id: Optional[str] = None
+    prompt_type: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True, alias_generator=to_camel, populate_by_name=True)

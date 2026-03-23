@@ -3,6 +3,8 @@ import AppLayout from './components/AppLayout.vue'
 import Home from './views/Home.vue'
 import RouteStudio from './views/RouteStudio.vue'
 import Journal from './views/Journal.vue'
+import TravelogueView from './views/TravelogueView.vue'
+import EvaluationView from './views/EvaluationView.vue'
 
 const router = createRouter({
     history: createWebHistory(),
@@ -25,6 +27,16 @@ const router = createRouter({
                     path: '/journal',
                     name: 'Journal',
                     component: Journal
+                },
+                {
+                    path: '/journal/:id',
+                    name: 'Travelogue',
+                    component: TravelogueView
+                },
+                {
+                    path: '/journal/:id/evaluation',
+                    name: 'Evaluation',
+                    component: EvaluationView
                 }
             ]
         }
