@@ -306,6 +306,10 @@ class Neo4jService:
                 travelogue_id: $travelogue_id,
                 prompt_type: $prompt_type,
                 is_truncated: $is_truncated,
+                pair_f1: $pair_f1,
+                pair_precision: $pair_precision,
+                pair_recall: $pair_recall,
+                pair_is_truncated: $pair_is_truncated,
                 created_at: $created_at
             })
             CREATE (t)-[:HAS_EVALUATION]->(e)
@@ -325,6 +329,10 @@ class Neo4jService:
                 bertscore_model=evaluation_data.get("bertscore_model", ""),
                 prompt_type=evaluation_data.get("prompt_type", "zero_shot"),
                 is_truncated=evaluation_data.get("is_truncated", False),
+                pair_f1=evaluation_data.get("pair_f1", []),
+                pair_precision=evaluation_data.get("pair_precision", []),
+                pair_recall=evaluation_data.get("pair_recall", []),
+                pair_is_truncated=evaluation_data.get("pair_is_truncated", []),
                 created_at=datetime.utcnow(),
             )
             return self._format_node(result.single()["e"])

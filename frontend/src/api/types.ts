@@ -69,6 +69,10 @@ export interface EvaluationResponse {
     travelogueId?: string | null;
     promptType?: string | null;
     isTruncated?: boolean;
+    pairF1?: number[];
+    pairPrecision?: number[];
+    pairRecall?: number[];
+    pairIsTruncated?: boolean[];
 }
 
 export interface TravelogueCreate {

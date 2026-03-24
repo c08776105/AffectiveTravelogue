@@ -44,7 +44,7 @@ class EvaluationService:
         self._get_scorer()
 
     def calculate_bertscore(self, ai_travelogue: str, human_journal: str):
-        """Calculate BERTScore F1 between the AI travelogue and the human journal."""
+        """Calculate BERTScore F1 between the AI travelogue and the human journal (legacy single-pair path)."""
         try:
             ai_text = ai_travelogue[: self._MAX_CHARS]
             human_text = human_journal[: self._MAX_CHARS]
@@ -67,6 +67,77 @@ class EvaluationService:
         except Exception as e:
             logger.error(f"BERTScore calculation failed: {e}", exc_info=True)
             return {"precision": 0, "recall": 0, "f1": 0, "is_equivalent": False, "bertscore_model": settings.BERTSCORE_MODEL, "is_truncated": False}
+
+    def calculate_bertscore_pairs(self, human_notes: list[str], ai_paragraphs: list[str]) -> dict:
+        """
+        Paragraph-to-paragraph BERTScore comparison with macro averaging.
+
+        Pairs human_notes[i] with ai_paragraphs[i] up to min(len) of both.
+        All pairs are scored in a single batched scorer call for efficiency.
+        Returns macro-averaged precision/recall/F1 plus per-pair detail arrays.
+        """
+        pairs = list(zip(human_notes, ai_paragraphs))
+        if not pairs:
+            return {
+                "precision": 0.0, "recall": 0.0, "f1": 0.0,
+                "is_equivalent": False,
+                "bertscore_model": settings.BERTSCORE_MODEL,
+                "is_truncated": False,
+                "pair_f1": [], "pair_precision": [], "pair_recall": [], "pair_is_truncated": [],
+            }
+
+        try:
+            scorer = self._get_scorer()
+            tok = scorer._tokenizer
+
+            human_texts = [h[: self._MAX_CHARS] for h, _ in pairs]
+            ai_texts    = [a[: self._MAX_CHARS] for _, a in pairs]
+
+            pair_is_truncated = [
+                len(tok.encode(h, add_special_tokens=True)) > 512
+                or len(tok.encode(a, add_special_tokens=True)) > 512
+                for h, a in zip(human_texts, ai_texts)
+            ]
+
+            P_all, R_all, F1_all = scorer.score(ai_texts, human_texts, verbose=False)
+
+            pair_f1        = [float(v.item()) for v in F1_all]
+            pair_precision = [float(v.item()) for v in P_all]
+            pair_recall    = [float(v.item()) for v in R_all]
+
+            n = len(pairs)
+            macro_f1  = sum(pair_f1)        / n
+            macro_p   = sum(pair_precision) / n
+            macro_r   = sum(pair_recall)    / n
+
+            logger.info(
+                f"BERTScore pairs: {n} pair(s), macro F1={macro_f1:.4f}, "
+                f"truncated={sum(pair_is_truncated)}/{n}"
+            )
+
+            return {
+                "precision": macro_p,
+                "recall": macro_r,
+                "f1": macro_f1,
+                "is_equivalent": macro_f1 >= 0.85,
+                "bertscore_model": settings.BERTSCORE_MODEL,
+                "is_truncated": any(pair_is_truncated),
+                "pair_f1": pair_f1,
+                "pair_precision": pair_precision,
+                "pair_recall": pair_recall,
+                "pair_is_truncated": pair_is_truncated,
+            }
+        except Exception as e:
+            logger.error(f"BERTScore pair scoring failed: {e}", exc_info=True)
+            n = len(pairs)
+            return {
+                "precision": 0.0, "recall": 0.0, "f1": 0.0,
+                "is_equivalent": False,
+                "bertscore_model": settings.BERTSCORE_MODEL,
+                "is_truncated": False,
+                "pair_f1": [0.0] * n, "pair_precision": [0.0] * n,
+                "pair_recall": [0.0] * n, "pair_is_truncated": [False] * n,
+            }
 
     def calculate_sentiment(self, text: str) -> float:
         """

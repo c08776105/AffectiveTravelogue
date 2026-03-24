@@ -26,5 +26,9 @@ class EvaluationResponse(BaseModel):
     travelogue_id: Optional[str] = None
     prompt_type: Optional[str] = None
     is_truncated: bool = False
+    pair_f1: list[float] = []
+    pair_precision: list[float] = []
+    pair_recall: list[float] = []
+    pair_is_truncated: list[bool] = []
 
     model_config = ConfigDict(from_attributes=True, alias_generator=to_camel, populate_by_name=True)

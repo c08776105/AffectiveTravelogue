@@ -42,7 +42,42 @@
                 <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-3 mb-3">
                     Semantic Similarity (BERTScore)
                 </h2>
+
+                <!-- Per-waypoint breakdown -->
+                <v-card v-if="waypointScores.length > 0" class="rounded-xl pa-5 mb-3" border flat>
+                    <p class="text-caption text-uppercase font-weight-bold text-grey-darken-1 mb-3">
+                        Per-Waypoint Scores
+                    </p>
+                    <div v-for="(wp, i) in waypointScores" :key="i" class="mb-4">
+                        <div class="d-flex justify-space-between align-center mb-1">
+                            <span class="text-caption font-weight-bold text-grey-darken-2 d-flex align-center" style="gap:6px">
+                                Waypoint {{ i + 1 }}
+                                <v-chip v-if="wp.isTruncated" size="x-small" color="warning" variant="tonal">truncated</v-chip>
+                            </span>
+                            <span class="text-caption font-weight-bold" :class="scoreColor(wp.f1)">
+                                F1 {{ (wp.f1 * 100).toFixed(1) }}%
+                            </span>
+                        </div>
+                        <v-progress-linear
+                            :model-value="wp.f1 * 100"
+                            :color="scoreColor(wp.f1)"
+                            bg-color="grey-lighten-3"
+                            rounded
+                            height="6"
+                            class="mb-1"
+                        />
+                        <div class="d-flex justify-end" style="gap: 12px">
+                            <span class="text-caption text-medium-emphasis">P {{ (wp.precision * 100).toFixed(1) }}%</span>
+                            <span class="text-caption text-medium-emphasis">R {{ (wp.recall * 100).toFixed(1) }}%</span>
+                        </div>
+                    </div>
+                </v-card>
+
+                <!-- Macro averages -->
                 <v-card class="rounded-xl pa-5 mb-5" border flat>
+                    <p class="text-caption text-uppercase font-weight-bold text-grey-darken-1 mb-3">
+                        {{ waypointScores.length > 1 ? 'Macro Average' : 'Overall' }}
+                    </p>
                     <div v-for="metric in bertMetrics" :key="metric.label" class="mb-4">
                         <div class="d-flex justify-space-between align-center mb-1">
                             <span class="text-caption font-weight-bold text-grey-darken-2">
@@ -62,6 +97,7 @@
                     </div>
                     <p class="text-caption text-medium-emphasis mt-2">
                         Threshold for equivalence: F1 ≥ 85%
+                        <span v-if="waypointScores.length > 1"> · macro-averaged over {{ waypointScores.length }} waypoints</span>
                     </p>
                     <p v-if="evaluation.bertscoreModel" class="text-caption text-medium-emphasis mt-1">
                         BERTScore model: {{ evaluation.bertscoreModel }}
@@ -77,7 +113,7 @@
                         class="mt-3 text-caption"
                         icon="mdi-alert-outline"
                     >
-                        One or both texts exceeded the 512-token limit and were truncated before scoring. Results may not reflect the full content.
+                        One or more waypoints exceeded the 512-token limit and were truncated before scoring. Results may not reflect the full content.
                     </v-alert>
                 </v-card>
 
@@ -232,6 +268,19 @@ const bertMetrics = computed(() => [
     { label: 'Precision', value: evaluation.value?.bertscorePrecision ?? 0 },
     { label: 'Recall', value: evaluation.value?.bertscoreRecall ?? 0 },
 ])
+
+const waypointScores = computed(() => {
+    const f1s  = evaluation.value?.pairF1 ?? []
+    const prec = evaluation.value?.pairPrecision ?? []
+    const rec  = evaluation.value?.pairRecall ?? []
+    const trunc = evaluation.value?.pairIsTruncated ?? []
+    return f1s.map((f1, i) => ({
+        f1,
+        precision: prec[i] ?? 0,
+        recall: rec[i] ?? 0,
+        isTruncated: trunc[i] ?? false,
+    }))
+})
 
 function scoreColor(value: number): string {
     if (value >= 0.85) return 'success'

@@ -11,15 +11,14 @@ from services.rag_service import rag_service
 router = APIRouter(prefix="/api/evaluate", tags=["Evaluation"])
 
 
-def _build_human_journal(route_id: str) -> str:
-    """Assemble the human travelogue from the route's waypoint text notes."""
+def _get_human_notes(route_id: str) -> list[str]:
+    """Return waypoint text notes as an ordered list (oldest first)."""
     waypoints = neo4j_service.get_waypoints(route_id)
     notes = []
     for wp in waypoints:
         raw = wp.get("text_note")
         if not raw:
             continue
-        # text_note may be JSON-encoded by the observation dialog
         try:
             parsed = json.loads(raw)
             text = parsed.get("text") or parsed.get("content") or raw
@@ -27,7 +26,16 @@ def _build_human_journal(route_id: str) -> str:
             text = raw
         if text and text.strip():
             notes.append(text.strip())
-    return "\n\n".join(notes)
+    return notes
+
+
+def _split_ai_paragraphs(travelogue: str) -> list[str]:
+    """Split AI travelogue into per-waypoint paragraphs."""
+    paragraphs = [p.strip() for p in travelogue.split("\n\n") if p.strip()]
+    # Fall back to single-newline split if the model produced no double newlines
+    if len(paragraphs) <= 1:
+        paragraphs = [p.strip() for p in travelogue.split("\n") if p.strip()]
+    return paragraphs
 
 
 @router.get("/{route_id}", response_model=EvaluationResponse)
@@ -60,24 +68,27 @@ async def evaluate_route(route_id: str, travelogue_id: Optional[str] = Query(Non
             travelogue_id = travelogue_node["id"]
             ai_travelogue = travelogue_node["text"]
         else:
-            # Auto-generate if no travelogue exists
             result = rag_service.generate_travelogue(route_id)
-            travelogue_node = neo4j_service.store_travelogue_node(route_id, result["text"], result["llm_model"], result["prompt_type"])
+            travelogue_node = neo4j_service.store_travelogue_node(
+                route_id, result["text"], result["llm_model"], result["prompt_type"]
+            )
             travelogue_id = travelogue_node["id"]
             ai_travelogue = travelogue_node["text"]
 
-    # Build human journal from the route's waypoint notes
-    human_journal = _build_human_journal(route_id)
-    if not human_journal:
+    human_notes = _get_human_notes(route_id)
+    if not human_notes:
         raise HTTPException(
             status_code=422,
             detail="No waypoint notes found for this route. Add notes during your walk before evaluating.",
         )
 
-    # Replace any prior evaluation for this specific travelogue
+    ai_paragraphs = _split_ai_paragraphs(ai_travelogue)
+
     neo4j_service.delete_evaluation_for_travelogue(travelogue_id)
 
-    scores = eval_service.calculate_bertscore(ai_travelogue, human_journal)
+    scores = eval_service.calculate_bertscore_pairs(human_notes, ai_paragraphs)
+
+    human_journal = "\n\n".join(human_notes)
     human_sent = eval_service.calculate_sentiment(human_journal)
     ai_sent = eval_service.calculate_sentiment(ai_travelogue)
 
@@ -90,10 +101,14 @@ async def evaluate_route(route_id: str, travelogue_id: Optional[str] = Query(Non
         "ai_sentiment": ai_sent,
         "human_journal": human_journal,
         "ai_travelogue": ai_travelogue,
-        "bertscore_model": scores.get("bertscore_model"),
+        "bertscore_model": scores["bertscore_model"],
         "travelogue_id": travelogue_id,
         "prompt_type": travelogue_node.get("prompt_type", "zero_shot"),
-        "is_truncated": scores.get("is_truncated", False),
+        "is_truncated": scores["is_truncated"],
+        "pair_f1": scores["pair_f1"],
+        "pair_precision": scores["pair_precision"],
+        "pair_recall": scores["pair_recall"],
+        "pair_is_truncated": scores["pair_is_truncated"],
     }
 
     neo4j_service.store_evaluation_for_travelogue(travelogue_id, result)
