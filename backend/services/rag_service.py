@@ -79,7 +79,11 @@ class RAGService:
 
         user_instruction = (
             "Route Name: {route_name}\n\nSpatial Data:\n{context}\n\n"
-            "Write a detailed psychogeographic travelogue of this walk based only on the locations and nearby features listed above."
+            "Write a psychogeographic travelogue of this walk. "
+            "Write exactly one paragraph per waypoint listed above, in the same order. "
+            "Separate each paragraph with a blank line. "
+            "Each paragraph should be 2–5 sentences, grounded in what the spatial data tells you about that specific location. "
+            "Use only the locations and nearby features listed above — do not invent."
         )
 
         messages = [("system", self.system_prompt)]
@@ -103,7 +107,9 @@ class RAGService:
                         context_parts.append(wp_context)
                     example_input = (
                         f"Route Name: {example['route_name']}\n\nSpatial Data:\n{chr(10).join(context_parts)}\n"
-                        "Write a detailed psychogeographic travelogue of this walk based only on the locations and nearby features listed above."
+                        "Write a travelogue of this walk. "
+                        "Write exactly one paragraph per waypoint, separated by blank lines. "
+                        "Use only the locations and nearby features listed above."
                     )
                     messages.append(("user", example_input))
                     messages.append(("ai", "\n\n".join(notes)))
