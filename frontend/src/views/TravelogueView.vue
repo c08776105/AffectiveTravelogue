@@ -158,8 +158,19 @@
                                 hide-details
                                 class="mb-3"
                             />
-                            <p v-if="configPromptType === 'few_shot'" class="text-caption text-medium-emphasis">
+                            <p v-if="configPromptType === 'few_shot'" class="text-caption text-medium-emphasis mb-3">
                                 Few Shot includes a human-written journal from another completed journey as a style example in the prompt.
+                            </p>
+                            <v-switch
+                                v-model="configMetaPrompt"
+                                label="Style Adaptation"
+                                color="primary"
+                                density="compact"
+                                hide-details
+                                class="mb-1"
+                            />
+                            <p class="text-caption text-medium-emphasis">
+                                Analyses your journey notes to adapt the AI's writing style to match yours before generating.
                             </p>
                             <v-btn
                                 block
@@ -210,6 +221,9 @@
                                     <v-chip size="x-small" variant="tonal" color="primary" class="ml-2">
                                         {{ item.raw.promptType === 'few_shot' ? 'Few Shot' : 'Zero Shot' }}
                                     </v-chip>
+                                    <v-chip v-if="item.raw.metaPrompted" size="x-small" variant="tonal" color="deep-purple" class="ml-1">
+                                        Style Adapted
+                                    </v-chip>
                                 </template>
                                 <template #subtitle>
                                     <span class="text-caption text-medium-emphasis">{{ formatDate(item.raw.createdAt) }}</span>
@@ -234,6 +248,9 @@
                             <span class="text-body-2">{{ item.raw.llmModel }} — {{ formatDate(item.raw.createdAt) }}</span>
                             <v-chip size="x-small" variant="tonal" color="primary" class="ml-2">
                                 {{ item.raw.promptType === 'few_shot' ? 'Few Shot' : 'Zero Shot' }}
+                            </v-chip>
+                            <v-chip v-if="item.raw.metaPrompted" size="x-small" variant="tonal" color="deep-purple" class="ml-1">
+                                Style Adapted
                             </v-chip>
                             <template v-if="item.raw.evaluation">
                                 <v-chip
@@ -387,6 +404,7 @@ const errorMessage = ref("");
 const showConfig = ref(false);
 const configModel = ref<string>("");
 const configPromptType = ref("zero_shot");
+const configMetaPrompt = ref(false);
 const availableModels = ref<string[]>([]);
 const promptTypeOptions = [
     { label: "Zero Shot", value: "zero_shot" },
@@ -450,6 +468,7 @@ async function generateNew() {
         const newTravelogue = await apiService.generateTravelogue(routeId, {
             llmModel: configModel.value || undefined,
             promptType: configPromptType.value,
+            useMetaPrompt: configMetaPrompt.value,
         });
         travelogues.value.unshift(newTravelogue);
         selectedTravelogue.value = newTravelogue;

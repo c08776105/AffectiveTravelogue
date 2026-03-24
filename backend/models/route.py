@@ -39,6 +39,7 @@ class RouteUpdate(BaseModel):
 class TravelogueCreate(BaseModel):
     llm_model: Optional[str] = None
     prompt_type: str = "zero_shot"
+    use_meta_prompt: bool = False
 
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
@@ -48,6 +49,7 @@ class TravelogueResponse(BaseModel):
     text: str
     llm_model: str
     prompt_type: str = "zero_shot"
+    meta_prompted: bool = False
     created_at: datetime
     evaluation: Optional[EvaluationResponse] = None
 

@@ -78,6 +78,7 @@ export interface EvaluationResponse {
 export interface TravelogueCreate {
     llmModel?: string | null;
     promptType?: string;
+    useMetaPrompt?: boolean;
 }
 
 export interface TravelogueResponse {
@@ -85,6 +86,7 @@ export interface TravelogueResponse {
     text: string;
     llmModel: string;
     promptType: string;
+    metaPrompted: boolean;
     createdAt: string;
     evaluation?: EvaluationResponse | null;
 }

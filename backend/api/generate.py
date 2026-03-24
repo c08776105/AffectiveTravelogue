@@ -31,11 +31,13 @@ async def generate_travelogue(route_id: str, body: Optional[TravelogueCreate] = 
 
     llm_model = body.llm_model if body else None
     prompt_type = body.prompt_type if body else "zero_shot"
+    use_meta_prompt = body.use_meta_prompt if body else False
 
     try:
-        result = rag_service.generate_travelogue(route_id, llm_model=llm_model, prompt_type=prompt_type)
+        result = rag_service.generate_travelogue(route_id, llm_model=llm_model, prompt_type=prompt_type, use_meta_prompt=use_meta_prompt)
         node = neo4j_service.store_travelogue_node(
-            route_id, result["text"], result["llm_model"], result["prompt_type"]
+            route_id, result["text"], result["llm_model"], result["prompt_type"],
+            meta_prompted=result.get("meta_prompted", False),
         )
         return node
     except Exception as e:

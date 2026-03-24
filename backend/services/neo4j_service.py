@@ -215,6 +215,42 @@ class Neo4jService:
             record = result.single()
             return self._format_node(record["e"]) if record else None
 
+    def store_pois_for_waypoints(self, waypoints: list[dict], poi_map: dict[int, list[dict]]) -> None:
+        """Cache OSM POI results on each Waypoint node to avoid redundant API calls."""
+        import json
+        if not waypoints:
+            return
+        with self.driver.session() as session:
+            for i, wp in enumerate(waypoints):
+                pois = poi_map.get(i, [])
+                session.run(
+                    "MATCH (w:Waypoint {id: $id}) SET w.poi_cache = $cache, w.poi_fetched_at = $ts",
+                    id=wp["id"],
+                    cache=json.dumps(pois),
+                    ts=datetime.utcnow(),
+                )
+
+    def get_cached_pois_for_waypoints(self, waypoints: list[dict]) -> dict[int, list[dict]] | None:
+        """Return cached POI data keyed by waypoint index, or None if any waypoint is uncached."""
+        import json
+        if not waypoints:
+            return {}
+        ids = [wp["id"] for wp in waypoints]
+        with self.driver.session() as session:
+            records = session.run(
+                "MATCH (w:Waypoint) WHERE w.id IN $ids RETURN w.id AS id, w.poi_cache AS cache",
+                ids=ids,
+            )
+            cache_by_id = {r["id"]: r["cache"] for r in records}
+
+        result = {}
+        for i, wp in enumerate(waypoints):
+            cache = cache_by_id.get(wp["id"])
+            if cache is None:
+                return None  # Cache miss — fall back to OSM
+            result[i] = json.loads(cache)
+        return result
+
     def get_example_for_few_shot(self, exclude_route_id: str):
         """Fetch the first 3 noted waypoints (oldest first) from a different completed route for few-shot prompting."""
         with self.driver.session() as session:
@@ -238,12 +274,12 @@ class Neo4jService:
                 "waypoints": [self._format_node(w) for w in record["waypoints"]],
             }
 
-    def store_travelogue_node(self, route_id: str, text: str, llm_model: str, prompt_type: str = "zero_shot") -> dict:
+    def store_travelogue_node(self, route_id: str, text: str, llm_model: str, prompt_type: str = "zero_shot", meta_prompted: bool = False) -> dict:
         with self.driver.session() as session:
             travelogue_id = str(uuid.uuid4())
             query = """
             MATCH (r:Route {id: $route_id})
-            CREATE (t:Travelogue {id: $id, text: $text, llm_model: $llm_model, prompt_type: $prompt_type, created_at: $created_at})
+            CREATE (t:Travelogue {id: $id, text: $text, llm_model: $llm_model, prompt_type: $prompt_type, meta_prompted: $meta_prompted, created_at: $created_at})
             CREATE (r)-[:HAS_TRAVELOGUE]->(t)
             SET r.travelogue = $text
             RETURN t
@@ -255,6 +291,7 @@ class Neo4jService:
                 text=text,
                 llm_model=llm_model,
                 prompt_type=prompt_type,
+                meta_prompted=meta_prompted,
                 created_at=datetime.utcnow(),
             )
             return self._format_node(result.single()["t"])
