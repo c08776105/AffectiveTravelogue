@@ -215,6 +215,42 @@ class Neo4jService:
             record = result.single()
             return self._format_node(record["e"]) if record else None
 
+    def store_elevations_for_waypoints(self, waypoints: list[dict], elevations: list[float | None]) -> None:
+        """Cache elevation (metres) on each Waypoint node."""
+        if not waypoints:
+            return
+        with self.driver.session() as session:
+            for wp, elev in zip(waypoints, elevations):
+                if elev is not None:
+                    session.run(
+                        "MATCH (w:Waypoint {id: $id}) SET w.elevation_m = $elev",
+                        id=wp["id"],
+                        elev=elev,
+                    )
+
+    def get_cached_elevations_for_waypoints(self, waypoints: list[dict]) -> list[float | None] | None:
+        """
+        Return cached elevation values aligned with the waypoints list.
+        Returns None if any waypoint is missing elevation data (cache miss).
+        """
+        if not waypoints:
+            return []
+        ids = [wp["id"] for wp in waypoints]
+        with self.driver.session() as session:
+            records = session.run(
+                "MATCH (w:Waypoint) WHERE w.id IN $ids RETURN w.id AS id, w.elevation_m AS elev",
+                ids=ids,
+            )
+            elev_by_id = {r["id"]: r["elev"] for r in records}
+
+        result = []
+        for wp in waypoints:
+            elev = elev_by_id.get(wp["id"])
+            if elev is None:
+                return None  # Cache miss
+            result.append(float(elev))
+        return result
+
     def store_pois_for_waypoints(self, waypoints: list[dict], poi_map: dict[int, list[dict]]) -> None:
         """Cache OSM POI results on each Waypoint node to avoid redundant API calls."""
         import json
@@ -347,6 +383,8 @@ class Neo4jService:
                 pair_precision: $pair_precision,
                 pair_recall: $pair_recall,
                 pair_is_truncated: $pair_is_truncated,
+                human_waypoint_count: $human_waypoint_count,
+                ai_paragraph_count: $ai_paragraph_count,
                 created_at: $created_at
             })
             CREATE (t)-[:HAS_EVALUATION]->(e)
@@ -370,6 +408,8 @@ class Neo4jService:
                 pair_precision=evaluation_data.get("pair_precision", []),
                 pair_recall=evaluation_data.get("pair_recall", []),
                 pair_is_truncated=evaluation_data.get("pair_is_truncated", []),
+                human_waypoint_count=evaluation_data.get("human_waypoint_count"),
+                ai_paragraph_count=evaluation_data.get("ai_paragraph_count"),
                 created_at=datetime.utcnow(),
             )
             return self._format_node(result.single()["e"])
