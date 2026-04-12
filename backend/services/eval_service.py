@@ -1,3 +1,7 @@
+import csv
+from dataclasses import dataclass
+from pathlib import Path
+
 import numpy as np
 from bert_score import BERTScorer
 from scipy import stats
@@ -40,34 +44,61 @@ class EvaluationService:
                 tok.model_max_length = 512
             logger.info(f"BERTScorer ready. Model: {settings.BERTSCORE_MODEL}")
 
-            # Print ceiling similiarity values
-            P, R, F1 = self._scorer.score(
-                ["The quick brown fox jumps over the lazy dog."],
-                ["The quick brown fox jumps over the lazy dog."],
-            )
-            print(
-                f"Ceil vals: F1: {F1.item():.4f}, P: {P.item():.4f}, R: {R.item():.4f}"
-            )
-
-            # Paraphrased
-            P, R, F1 = self._scorer.score(
-                ["We walked along the old stone bridge crossing the river."],
-                ["The group crossed the ancient bridge that spanned the river."],
-            )
-
-            print(
-                f"Paraphrased vals: F1: {F1.item():.4f}, P: {P.item():.4f}, R: {R.item():.4f}"
-            )  # expect ~0.55–0.75 w/rescaled on
-
-            # Unrelated
-            P, R, F1 = self._scorer.score(
-                ["The river flows north."], ["Stock prices fell sharply."]
-            )
-
-            print(
-                f"Worst case vals: F1: {F1.item():.4f}, P: {P.item():.4f}, R: {R.item():.4f}"
-            )  # expect ~0.0–0.15
+            self._print_test_scores()
         return self._scorer
+
+    def _load_csv_pairs(self, filepath: Path) -> list[tuple[str, str]]:
+        pairs = []
+        with open(filepath, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                ref = row["reference"].strip()
+                cand = row["candidate"].strip()
+                if ref and cand:
+                    pairs.append((ref, cand))
+        return pairs
+
+    def _print_test_scores(self, inputs_dir: str = "bertscore_inputs") -> None:
+        base = Path(inputs_dir)
+        categories = {
+            "ceiling": base / "ceiling.csv",
+            "paraphrased": base / "paraphrased.csv",
+            "unrelated": base / "unrelated.csv",
+        }
+
+        for category, filepath in categories.items():
+            if not filepath.exists():
+                logger.warning(f"Benchmark file not found: {filepath}")
+                continue
+
+            pairs = self._load_csv_pairs(filepath)
+            if not pairs:
+                logger.warning(f"No valid pairs found in {filepath}")
+                continue
+
+            references = [r for r, _ in pairs]
+            candidates = [c for _, c in pairs]
+            P_all, R_all, F1_all = self._scorer.score(
+                candidates, references, verbose=False
+            )
+
+            f1_values = [float(v.item()) for v in F1_all]
+            p_values = [float(v.item()) for v in P_all]
+            r_values = [float(v.item()) for v in R_all]
+
+            print(f"\n[{category.upper()}] n={len(pairs)}")
+            print(
+                f"  Mean  — F1: {np.mean(f1_values):.4f}, P: {np.mean(p_values):.4f}, R: {np.mean(r_values):.4f}"
+            )
+            print(
+                f"  Std   — F1: {np.std(f1_values):.4f},  P: {np.std(p_values):.4f},  R: {np.std(r_values):.4f}"
+            )
+            print(
+                f"  Min   — F1: {np.min(f1_values):.4f},  P: {np.min(p_values):.4f},  R: {np.min(r_values):.4f}"
+            )
+            print(
+                f"  Max   — F1: {np.max(f1_values):.4f},  P: {np.max(p_values):.4f},  R: {np.max(r_values):.4f}"
+            )
 
     def warm_up(self) -> None:
         """Eagerly load the BERTScorer on startup so weights are cached in memory for the process lifetime."""
