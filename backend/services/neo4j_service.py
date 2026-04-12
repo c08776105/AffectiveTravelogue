@@ -82,7 +82,9 @@ class Neo4jService:
                 node = self._format_node(record["r"])
                 node["waypoint_count"] = record["waypoint_count"]
                 node["first_note"] = record["first_note"]
-                logger.debug(f"Route {node.get('id')}: waypoint_count={node['waypoint_count']}, first_note={repr(node['first_note'])}")
+                logger.debug(
+                    f"Route {node.get('id')}: waypoint_count={node['waypoint_count']}, first_note={repr(node['first_note'])}"
+                )
                 rows.append(node)
             return rows
 
@@ -215,7 +217,9 @@ class Neo4jService:
             record = result.single()
             return self._format_node(record["e"]) if record else None
 
-    def store_elevations_for_waypoints(self, waypoints: list[dict], elevations: list[float | None]) -> None:
+    def store_elevations_for_waypoints(
+        self, waypoints: list[dict], elevations: list[float | None]
+    ) -> None:
         """Cache elevation (metres) on each Waypoint node."""
         if not waypoints:
             return
@@ -228,7 +232,9 @@ class Neo4jService:
                         elev=elev,
                     )
 
-    def get_cached_elevations_for_waypoints(self, waypoints: list[dict]) -> list[float | None] | None:
+    def get_cached_elevations_for_waypoints(
+        self, waypoints: list[dict]
+    ) -> list[float | None] | None:
         """
         Return cached elevation values aligned with the waypoints list.
         Returns None if any waypoint is missing elevation data (cache miss).
@@ -251,9 +257,12 @@ class Neo4jService:
             result.append(float(elev))
         return result
 
-    def store_pois_for_waypoints(self, waypoints: list[dict], poi_map: dict[int, list[dict]]) -> None:
+    def store_pois_for_waypoints(
+        self, waypoints: list[dict], poi_map: dict[int, list[dict]]
+    ) -> None:
         """Cache OSM POI results on each Waypoint node to avoid redundant API calls."""
         import json
+
         if not waypoints:
             return
         with self.driver.session() as session:
@@ -266,9 +275,12 @@ class Neo4jService:
                     ts=datetime.utcnow(),
                 )
 
-    def get_cached_pois_for_waypoints(self, waypoints: list[dict]) -> dict[int, list[dict]] | None:
+    def get_cached_pois_for_waypoints(
+        self, waypoints: list[dict]
+    ) -> dict[int, list[dict]] | None:
         """Return cached POI data keyed by waypoint index, or None if any waypoint is uncached."""
         import json
+
         if not waypoints:
             return {}
         ids = [wp["id"] for wp in waypoints]
@@ -310,7 +322,14 @@ class Neo4jService:
                 "waypoints": [self._format_node(w) for w in record["waypoints"]],
             }
 
-    def store_travelogue_node(self, route_id: str, text: str, llm_model: str, prompt_type: str = "zero_shot", meta_prompted: bool = False) -> dict:
+    def store_travelogue_node(
+        self,
+        route_id: str,
+        text: str,
+        llm_model: str,
+        prompt_type: str = "zero_shot",
+        meta_prompted: bool = False,
+    ) -> dict:
         with self.driver.session() as session:
             travelogue_id = str(uuid.uuid4())
             query = """
@@ -362,7 +381,9 @@ class Neo4jService:
             node["evaluation"] = self._format_node(record["e"])
             return node
 
-    def store_evaluation_for_travelogue(self, travelogue_id: str, evaluation_data: dict) -> dict:
+    def store_evaluation_for_travelogue(
+        self, travelogue_id: str, evaluation_data: dict
+    ) -> dict:
         with self.driver.session() as session:
             query = """
             MATCH (t:Travelogue {id: $travelogue_id})
@@ -454,7 +475,7 @@ class Neo4jService:
         with self.driver.session() as session:
             aggregate_query = """
             MATCH (t:Travelogue)-[:HAS_EVALUATION]->(e:Evaluation)
-            WHERE t.is_valid = true
+            WHERE (t.is_valid is null or t.is_valid <> false)
               AND e.human_waypoint_count IS NOT NULL
               AND e.ai_paragraph_count IS NOT NULL
               AND e.human_waypoint_count = e.ai_paragraph_count
@@ -478,6 +499,7 @@ class Neo4jService:
             RETURN s
             """
             from datetime import datetime, timezone
+
             params = {
                 "mean_f1": agg["mean_f1"],
                 "min_f1": agg["min_f1"],

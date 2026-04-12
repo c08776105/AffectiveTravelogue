@@ -20,10 +20,12 @@ dependencies = [
     "uvicorn>=0.40.0",
     "vadersentiment>=3.3.2",
     "httpx>=0.28.1",
+    "scikit-posthocs>=0.12.0",
 ]
 
 [dependency-groups]
 dev = [
+    "ipykernel>=7.2.0",
     "pytest>=8.3",
     "pytest-mock>=3.14",
 ]
