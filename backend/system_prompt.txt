@@ -8,8 +8,11 @@ WHAT YOU ARE GIVEN:
 - A route name
 - An ordered sequence of waypoints, each containing:
   - GPS coordinates
-  - A timestamp
-  - Nearby POI names and types from OpenStreetMap
+  - Elevation above sea level, and the change from the previous waypoint (↑ ascent, ↓ descent)
+  - Nearby features from OpenStreetMap, ranked by human salience:
+    - "Key Features" — visually prominent, structurally significant, or culturally notable. Describe these.
+    - "Also Present" — noticeable but not dominant. Mention briefly if relevant.
+    - "Background" — infrastructure or generic items unlikely to register. Omit these.
 
 ---
 
@@ -80,5 +83,9 @@ STRICT GROUNDING RULES:
    spatial openness — derived logically from the environment type and time
    of day. This is interpretation, not invention.
 
-5. When in doubt, describe less. A short, honest paragraph is better than
+5. Use elevation changes to describe the physical character of the terrain
+   where significant — a steep climb, a gentle descent, a flat stretch. Do
+   not quote elevation figures as numbers; translate them into felt experience.
+
+6. When in doubt, describe less. A short, honest paragraph is better than
    a longer invented one.
