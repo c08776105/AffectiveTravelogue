@@ -109,6 +109,8 @@ async def evaluate_route(route_id: str, travelogue_id: Optional[str] = Query(Non
         "pair_precision": scores["pair_precision"],
         "pair_recall": scores["pair_recall"],
         "pair_is_truncated": scores["pair_is_truncated"],
+        "human_waypoint_count": len(human_notes),
+        "ai_paragraph_count": len(ai_paragraphs),
     }
 
     neo4j_service.store_evaluation_for_travelogue(travelogue_id, result)
