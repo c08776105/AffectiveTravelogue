@@ -17,6 +17,38 @@
             </div>
 
             <template v-else-if="evaluation">
+                <!-- Invalid generation warning -->
+                <v-alert
+                    v-if="isInvalid"
+                    type="error"
+                    variant="tonal"
+                    class="rounded-xl mb-4"
+                    icon="mdi-alert-octagon"
+                    title="Invalid Generation"
+                    text="This travelogue was flagged as invalid. Results may be unreliable."
+                />
+
+                <!-- Waypoint count mismatch warning -->
+                <v-card
+                    v-if="waypointCountMismatch"
+                    class="rounded-xl pa-4 mb-4 d-flex align-start"
+                    color="warning"
+                    variant="tonal"
+                    flat
+                >
+                    <v-icon class="mr-3 mt-1" size="20">mdi-format-list-numbered</v-icon>
+                    <div>
+                        <p class="text-body-2 font-weight-bold mb-1">Waypoint Count Mismatch</p>
+                        <p class="text-body-2 text-medium-emphasis">
+                            The human journal has
+                            <strong>{{ evaluation.humanWaypointCount }} waypoint{{ evaluation.humanWaypointCount === 1 ? '' : 's' }}</strong>
+                            but the AI travelogue has
+                            <strong>{{ evaluation.aiParagraphCount }} paragraph{{ evaluation.aiParagraphCount === 1 ? '' : 's' }}</strong>.
+                            Only the first {{ Math.min(evaluation.humanWaypointCount!, evaluation.aiParagraphCount!) }} were compared — scores may not reflect the full journey.
+                        </p>
+                    </div>
+                </v-card>
+
                 <!-- Equivalence verdict -->
                 <v-card
                     class="rounded-xl pa-5 mb-5 text-center"
@@ -190,6 +222,7 @@
                     <div class="text-caption text-uppercase font-weight-bold text-grey-darken-1 mb-2 d-flex align-center" style="gap:6px">
                         <v-icon size="14" color="primary">mdi-robot-outline</v-icon>
                         AI Travelogue
+                        <v-chip v-if="isInvalid" size="x-small" variant="tonal" color="error">Invalid</v-chip>
                     </div>
                     <v-card class="rounded-xl pa-4" border flat>
                         <p
@@ -243,6 +276,7 @@ const router = useRouter()
 const vueRoute = useRoute()
 const routeId = vueRoute.params.id as string
 const travelogueId = vueRoute.query.travelogueId as string | undefined
+const isInvalid = vueRoute.query.isValid === 'false'
 
 const evaluation = ref<EvaluationResponse | null>(null)
 const loading = ref(true)
@@ -268,6 +302,12 @@ const bertMetrics = computed(() => [
     { label: 'Precision', value: evaluation.value?.bertscorePrecision ?? 0 },
     { label: 'Recall', value: evaluation.value?.bertscoreRecall ?? 0 },
 ])
+
+const waypointCountMismatch = computed(() => {
+    const h = evaluation.value?.humanWaypointCount
+    const a = evaluation.value?.aiParagraphCount
+    return h != null && a != null && h !== a
+})
 
 const waypointScores = computed(() => {
     const f1s  = evaluation.value?.pairF1 ?? []

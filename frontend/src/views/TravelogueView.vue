@@ -224,6 +224,9 @@
                                     <v-chip v-if="item.raw.metaPrompted" size="x-small" variant="tonal" color="deep-purple" class="ml-1">
                                         Style Adapted
                                     </v-chip>
+                                    <v-chip v-if="item.raw.isValid === false" size="x-small" variant="tonal" color="error" class="ml-1">
+                                        Invalid
+                                    </v-chip>
                                 </template>
                                 <template #subtitle>
                                     <span class="text-caption text-medium-emphasis">{{ formatDate(item.raw.createdAt) }}</span>
@@ -240,6 +243,13 @@
                                             variant="tonal"
                                             class="ml-1"
                                         >{{ item.raw.evaluation.aiSentiment >= 0.05 ? 'Positive' : item.raw.evaluation.aiSentiment <= -0.05 ? 'Negative' : 'Neutral' }}</v-chip>
+                                        <v-chip
+                                            v-if="item.raw.evaluation.humanWaypointCount != null && item.raw.evaluation.aiParagraphCount != null && item.raw.evaluation.humanWaypointCount !== item.raw.evaluation.aiParagraphCount"
+                                            size="x-small"
+                                            color="warning"
+                                            variant="tonal"
+                                            class="ml-1"
+                                        >{{ item.raw.evaluation.humanWaypointCount }}wp / {{ item.raw.evaluation.aiParagraphCount }}ai</v-chip>
                                     </template>
                                 </template>
                             </v-list-item>
@@ -251,6 +261,9 @@
                             </v-chip>
                             <v-chip v-if="item.raw.metaPrompted" size="x-small" variant="tonal" color="deep-purple" class="ml-1">
                                 Style Adapted
+                            </v-chip>
+                            <v-chip v-if="item.raw.isValid === false" size="x-small" variant="tonal" color="error" class="ml-1">
+                                Invalid
                             </v-chip>
                             <template v-if="item.raw.evaluation">
                                 <v-chip
@@ -265,6 +278,13 @@
                                     variant="tonal"
                                     class="ml-1"
                                 >{{ item.raw.evaluation.aiSentiment >= 0.05 ? 'Positive' : item.raw.evaluation.aiSentiment <= -0.05 ? 'Negative' : 'Neutral' }}</v-chip>
+                                <v-chip
+                                    v-if="item.raw.evaluation.humanWaypointCount != null && item.raw.evaluation.aiParagraphCount != null && item.raw.evaluation.humanWaypointCount !== item.raw.evaluation.aiParagraphCount"
+                                    size="x-small"
+                                    color="warning"
+                                    variant="tonal"
+                                    class="ml-1"
+                                >{{ item.raw.evaluation.humanWaypointCount }}wp / {{ item.raw.evaluation.aiParagraphCount }}ai</v-chip>
                             </template>
                         </template>
                     </v-select>
@@ -377,6 +397,22 @@
         <v-snackbar v-model="errorSnack" color="error" :timeout="4000">
             {{ errorMessage }}
         </v-snackbar>
+
+        <!-- Generation failure modal -->
+        <v-dialog v-model="genErrorDialog" max-width="480" persistent>
+            <v-card class="rounded-xl pa-2">
+                <v-card-title class="d-flex align-center ga-2 pt-4 px-5">
+                    <v-icon color="error" size="22">mdi-alert-circle-outline</v-icon>
+                    Generation Failed
+                </v-card-title>
+                <v-card-text class="px-5 pb-2 text-body-2 text-medium-emphasis">
+                    {{ genErrorMessage }}
+                </v-card-text>
+                <v-card-actions class="px-5 pb-4 justify-end">
+                    <v-btn variant="tonal" color="error" @click="genErrorDialog = false">Dismiss</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </v-container>
 </template>
 
@@ -399,6 +435,8 @@ const generating = ref(false);
 const evaluating = ref(false);
 const errorSnack = ref(false);
 const errorMessage = ref("");
+const genErrorDialog = ref(false);
+const genErrorMessage = ref("");
 
 // Generation config
 const showConfig = ref(false);
@@ -472,10 +510,10 @@ async function generateNew() {
         });
         travelogues.value.unshift(newTravelogue);
         selectedTravelogue.value = newTravelogue;
-    } catch {
-        errorMessage.value =
-            "Failed to generate travelogue. Is Ollama running?";
-        errorSnack.value = true;
+    } catch (e: any) {
+        genErrorMessage.value =
+            e?.response?.data?.detail ?? "Generation failed. Is Ollama running?";
+        genErrorDialog.value = true;
     } finally {
         generating.value = false;
     }
@@ -502,7 +540,9 @@ async function runEvaluation() {
 
 function viewEvaluation() {
     if (!selectedTravelogue.value) return;
-    router.push(`/journal/${routeId}/evaluation?travelogueId=${selectedTravelogue.value.id}`);
+    const params = new URLSearchParams({ travelogueId: selectedTravelogue.value.id });
+    if (selectedTravelogue.value.isValid === false) params.set('isValid', 'false');
+    router.push(`/journal/${routeId}/evaluation?${params.toString()}`);
 }
 
 onMounted(async () => {

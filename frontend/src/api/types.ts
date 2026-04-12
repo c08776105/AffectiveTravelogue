@@ -73,6 +73,8 @@ export interface EvaluationResponse {
     pairPrecision?: number[];
     pairRecall?: number[];
     pairIsTruncated?: boolean[];
+    humanWaypointCount?: number | null;
+    aiParagraphCount?: number | null;
 }
 
 export interface TravelogueCreate {
@@ -88,5 +90,6 @@ export interface TravelogueResponse {
     promptType: string;
     metaPrompted: boolean;
     createdAt: string;
+    isValid?: boolean | null;
     evaluation?: EvaluationResponse | null;
 }
