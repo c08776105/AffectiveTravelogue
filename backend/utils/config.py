@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     # External APIs
     OPENSTREETMAP_API_TIMEOUT: int = 10
     OSM_POI_RADIUS_METERS: int = 50
+    ELEVATION_API_URL: str = "https://api.open-elevation.com/api/v1/lookup"
+    ELEVATION_API_TIMEOUT: int = 15
 
     class Config:
         env_file = ".env"
