@@ -30,5 +30,7 @@ class EvaluationResponse(BaseModel):
     pair_precision: list[float] = []
     pair_recall: list[float] = []
     pair_is_truncated: list[bool] = []
+    human_waypoint_count: Optional[int] = None
+    ai_paragraph_count: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True, alias_generator=to_camel, populate_by_name=True)

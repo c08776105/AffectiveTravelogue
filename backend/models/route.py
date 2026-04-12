@@ -51,6 +51,7 @@ class TravelogueResponse(BaseModel):
     prompt_type: str = "zero_shot"
     meta_prompted: bool = False
     created_at: datetime
+    is_valid: Optional[bool] = None
     evaluation: Optional[EvaluationResponse] = None
 
     model_config = ConfigDict(from_attributes=True, alias_generator=to_camel, populate_by_name=True)
