@@ -46,7 +46,9 @@ async def get_evaluation(route_id: str, travelogue_id: Optional[str] = Query(Non
         eval_data = neo4j_service.get_evaluation(route_id)
     if not eval_data:
         raise HTTPException(status_code=404, detail="Evaluation not found")
-    return dict(eval_data)
+    result = dict(eval_data)
+    result["stats"] = neo4j_service.get_evaluation_stats()
+    return result
 
 
 @router.post("/{route_id}", response_model=EvaluationResponse)
@@ -114,4 +116,5 @@ async def evaluate_route(route_id: str, travelogue_id: Optional[str] = Query(Non
     }
 
     neo4j_service.store_evaluation_for_travelogue(travelogue_id, result)
+    result["stats"] = neo4j_service.update_evaluation_stats()
     return result

@@ -432,6 +432,62 @@ class Neo4jService:
             """
             session.run(query, travelogue_id=travelogue_id)
 
+    def get_evaluation_stats(self) -> dict | None:
+        """Return the singleton EvaluationStats node, or None if it doesn't exist yet."""
+        with self.driver.session() as session:
+            query = """
+            MATCH (s:EvaluationStats {id: 'global'})
+            RETURN s
+            """
+            record = session.run(query).single()
+            return self._format_node(record["s"]) if record else None
+
+    def update_evaluation_stats(self) -> dict | None:
+        """Recompute mean/min/max F1 from valid evaluations and upsert the stats node.
+
+        A valid evaluation is one where:
+          - the parent Travelogue has is_valid = true
+          - human_waypoint_count equals ai_paragraph_count (counts are non-null and match)
+
+        Returns the upserted stats dict, or None if no valid evaluations exist yet.
+        """
+        with self.driver.session() as session:
+            aggregate_query = """
+            MATCH (t:Travelogue)-[:HAS_EVALUATION]->(e:Evaluation)
+            WHERE t.is_valid = true
+              AND e.human_waypoint_count IS NOT NULL
+              AND e.ai_paragraph_count IS NOT NULL
+              AND e.human_waypoint_count = e.ai_paragraph_count
+            RETURN
+                avg(e.bertscore_f1) AS mean_f1,
+                min(e.bertscore_f1) AS min_f1,
+                max(e.bertscore_f1) AS max_f1,
+                count(e)            AS sample_count
+            """
+            agg = session.run(aggregate_query).single()
+            if not agg or agg["sample_count"] == 0:
+                return None
+
+            upsert_query = """
+            MERGE (s:EvaluationStats {id: 'global'})
+            SET s.mean_f1      = $mean_f1,
+                s.min_f1       = $min_f1,
+                s.max_f1       = $max_f1,
+                s.sample_count = $sample_count,
+                s.updated_at   = $updated_at
+            RETURN s
+            """
+            from datetime import datetime, timezone
+            params = {
+                "mean_f1": agg["mean_f1"],
+                "min_f1": agg["min_f1"],
+                "max_f1": agg["max_f1"],
+                "sample_count": agg["sample_count"],
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }
+            record = session.run(upsert_query, **params).single()
+            return self._format_node(record["s"]) if record else None
+
     def neo4j_service_accessible(self) -> str:
         try:
             with self.driver.session() as session:

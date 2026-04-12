@@ -55,6 +55,14 @@ export interface WaypointResponse {
 }
 
 
+export interface EvaluationStats {
+    meanF1: number;
+    minF1: number;
+    maxF1: number;
+    sampleCount: number;
+    updatedAt: string;
+}
+
 export interface EvaluationResponse {
     bertscoreF1: number;
     bertscorePrecision: number;
@@ -75,6 +83,7 @@ export interface EvaluationResponse {
     pairIsTruncated?: boolean[];
     humanWaypointCount?: number | null;
     aiParagraphCount?: number | null;
+    stats?: EvaluationStats | null;
 }
 
 export interface TravelogueCreate {

@@ -12,6 +12,19 @@ class EvaluationBase(BaseModel):
 class EvaluationCreate(EvaluationBase):
     pass
 
+class EvaluationStats(BaseModel):
+    mean_f1: float
+    min_f1: float
+    max_f1: float
+    sample_count: int
+    updated_at: datetime
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
+
 class EvaluationResponse(BaseModel):
     bertscore_f1: float
     bertscore_precision: float
@@ -32,5 +45,6 @@ class EvaluationResponse(BaseModel):
     pair_is_truncated: list[bool] = []
     human_waypoint_count: Optional[int] = None
     ai_paragraph_count: Optional[int] = None
+    stats: Optional[EvaluationStats] = None
 
     model_config = ConfigDict(from_attributes=True, alias_generator=to_camel, populate_by_name=True)

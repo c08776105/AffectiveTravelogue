@@ -49,24 +49,26 @@
                     </div>
                 </v-card>
 
-                <!-- Equivalence verdict -->
+                <!-- Semantic Similarity verdict -->
                 <v-card
-                    class="rounded-xl pa-5 mb-5 text-center"
-                    :color="evaluation.isEquivalent ? 'success' : 'warning'"
+                    class="rounded-xl pa-5 mb-5"
+                    :color="verdict.color"
                     variant="tonal"
                     flat
                 >
-                    <v-icon size="36" class="mb-2">
-                        {{ evaluation.isEquivalent ? 'mdi-check-circle' : 'mdi-alert-circle' }}
-                    </v-icon>
-                    <p class="text-h6 font-weight-bold mb-1">
-                        {{ evaluation.isEquivalent ? 'Semantically Equivalent' : 'Not Equivalent' }}
-                    </p>
-                    <p class="text-body-2 text-medium-emphasis">
-                        {{ evaluation.isEquivalent
-                            ? 'Your journal and the AI travelogue convey similar meaning.'
-                            : 'Your journal and the AI travelogue diverge significantly.'
-                        }}
+                    <div class="d-flex align-center ga-3 mb-2">
+                        <v-icon size="28">{{ verdict.icon }}</v-icon>
+                        <p class="text-h6 font-weight-bold mb-0">{{ verdict.label }}</p>
+                    </div>
+                    <p class="text-body-2 text-medium-emphasis mb-0">{{ verdict.description }}</p>
+                    <p
+                        v-if="evaluation.stats && evaluation.stats.sampleCount > 0"
+                        class="text-caption text-medium-emphasis mt-2 mb-0"
+                    >
+                        Baseline — Mean: {{ (evaluation.stats.meanF1 * 100).toFixed(1) }}% ·
+                        Min: {{ (evaluation.stats.minF1 * 100).toFixed(1) }}% ·
+                        Max: {{ (evaluation.stats.maxF1 * 100).toFixed(1) }}%
+                        ({{ evaluation.stats.sampleCount }} valid evaluation{{ evaluation.stats.sampleCount === 1 ? '' : 's' }})
                     </p>
                 </v-card>
 
@@ -127,9 +129,8 @@
                             height="8"
                         />
                     </div>
-                    <p class="text-caption text-medium-emphasis mt-2">
-                        Threshold for equivalence: F1 ≥ 85%
-                        <span v-if="waypointScores.length > 1"> · macro-averaged over {{ waypointScores.length }} waypoints</span>
+                    <p v-if="waypointScores.length > 1" class="text-caption text-medium-emphasis mt-2">
+                        Macro-averaged over {{ waypointScores.length }} waypoints
                     </p>
                     <p v-if="evaluation.bertscoreModel" class="text-caption text-medium-emphasis mt-1">
                         BERTScore model: {{ evaluation.bertscoreModel }}
@@ -270,7 +271,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { apiService } from '@/api/services'
-import type { EvaluationResponse } from '@/api/types'
+import type { EvaluationResponse, EvaluationStats } from '@/api/types'
 
 const router = useRouter()
 const vueRoute = useRoute()
@@ -307,6 +308,52 @@ const waypointCountMismatch = computed(() => {
     const h = evaluation.value?.humanWaypointCount
     const a = evaluation.value?.aiParagraphCount
     return h != null && a != null && h !== a
+})
+
+const verdict = computed(() => {
+    const f1  = evaluation.value?.bertscoreF1 ?? 0
+    const s   = evaluation.value?.stats as EvaluationStats | null | undefined
+    const pct = (f1 * 100).toFixed(1)
+
+    if (f1 === 0) return {
+        label: 'No Semantic Similarity',
+        description: `The generated travelogue achieved a BERTScore F1 of ${pct}%, indicating no detectable semantic similarity to the human-authored reference text.`,
+        color: 'error', icon: 'mdi-close-circle',
+    }
+    if (f1 >= 1) return {
+        label: 'Identical Content',
+        description: `The generated travelogue achieved a BERTScore F1 of ${pct}%, indicating the output is semantically identical to the human-authored reference text.`,
+        color: 'success', icon: 'mdi-check-decagram',
+    }
+
+    if (s && s.sampleCount > 0) {
+        if (f1 < s.minF1) return {
+            label: 'Below Minimum Observed',
+            description: `The generated travelogue achieved a BERTScore F1 of ${pct}%, indicating weak semantic similarity to the human-authored reference text — below all previously recorded valid evaluations.`,
+            color: 'error', icon: 'mdi-trending-down',
+        }
+        if (f1 > s.maxF1) return {
+            label: 'Above Maximum Observed',
+            description: `The generated travelogue achieved a BERTScore F1 of ${pct}%, indicating strong semantic similarity to the human-authored reference text — surpassing all previously recorded valid evaluations.`,
+            color: 'success', icon: 'mdi-trending-up',
+        }
+        if (f1 >= s.meanF1) return {
+            label: 'Above Average Similarity',
+            description: `The generated travelogue achieved a BERTScore F1 of ${pct}%, indicating above-average semantic similarity to the human-authored reference text.`,
+            color: 'success', icon: 'mdi-arrow-up-circle',
+        }
+        return {
+            label: 'Below Average Similarity',
+            description: `The generated travelogue achieved a BERTScore F1 of ${pct}%, indicating below-average semantic similarity to the human-authored reference text.`,
+            color: 'warning', icon: 'mdi-arrow-down-circle',
+        }
+    }
+
+    return {
+        label: 'Semantic Similarity',
+        description: `The generated travelogue achieved a BERTScore F1 of ${pct}%. No baseline is available yet for relative comparison.`,
+        color: 'grey', icon: 'mdi-help-circle-outline',
+    }
 })
 
 const waypointScores = computed(() => {
