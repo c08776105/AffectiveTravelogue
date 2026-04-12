@@ -64,6 +64,7 @@ class RAGService:
         self.llm = OllamaLLM(
             base_url=settings.OLLAMA_HOST,
             model=settings.LLM_MODEL,
+            reasoning=True,
             temperature=0.7,
             num_ctx=8192,
             num_predict=2048,  # Change to allow for large numbers of POIs to process during salience ranking
