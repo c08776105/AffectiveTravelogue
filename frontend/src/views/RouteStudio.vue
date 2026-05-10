@@ -104,7 +104,7 @@
                 <v-fab
                     :disabled="!canLocate"
                     icon
-                    location="right end"
+                    location="right center"
                     size="large"
                     app
                     color="white"
@@ -882,7 +882,7 @@ const isDestroyed = ref(false);
 
 const startPoint = ref<{ lat: number; lng: number } | null>(null);
 const endPoint = ref<{ lat: number; lng: number } | null>(null);
-const markers = ref<maplibregl.Marker[]>([]);
+const markers = shallowRef<maplibregl.Marker[]>([]);
 
 const derivePoints = ref(1);
 const deviationMeters = ref(500);
@@ -900,7 +900,7 @@ const selectedWalkRoute = ref<RouteResponse | null>(null);
 const selectedWalkWaypoints = ref<WaypointResponse[]>([]);
 const selectedWalkEvaluation = ref<EvaluationResponse | null>(null);
 const loadingWalk = ref(false);
-const historyMarkers = ref<maplibregl.Marker[]>([]);
+const historyMarkers = shallowRef<maplibregl.Marker[]>([]);
 
 // Waypoint sheet
 const showWaypointSheet = ref(false);
