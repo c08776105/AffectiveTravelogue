@@ -1,60 +1,57 @@
 reference,candidate
-We walked along the old stone bridge crossing the river.,The group crossed the ancient bridge that spanned the river.
-The old market square was quiet in the early morning.,At dawn the historic plaza sat in near silence.
-Noticed the distant hills turning purple as the light faded.,The hills in the distance took on a violet hue as evening came.
-The scientist published her findings in a prestigious journal.,Her research results were released in a well-regarded academic publication.
-Heavy rain caused the local football match to be postponed.,The soccer game was delayed due to a significant downpour.
-Frequent exercise is known to improve cardiovascular health.,Regular physical activity is linked to better heart function.
-The chef prepared a three-course meal for the distinguished guests.,A trio of dishes was cooked by the head cook for the VIP visitors.
-Global temperatures are rising at an alarming rate according to recent data.,Latest statistics indicate that the earth is warming up extremely quickly.
-Software developers often collaborate on open-source projects.,Programmers frequently work together on public-access code initiatives.
-The library offers a wide range of digital resources for students.,A vast selection of electronic materials is available to pupils at the library.
-The architecture of the building reflects a modernist aesthetic.,The design of the structure demonstrates a contemporary style.
-Traveling to new countries can broaden one's perspective on life.,Visiting foreign nations can expand a person's worldview.
-The company decided to implement a new remote work policy.,A fresh strategy for working from home was adopted by the firm.
-Wildfires have destroyed thousands of acres of forest land.,Large areas of woodland have been razed by forest fires.
-Learning to play an instrument requires patience and dedication.,Mastering a musical tool demands persistence and commitment.
-The museum houses a significant collection of Impressionist paintings.,A major gathering of Impressionist art is kept within the museum.
-Electric vehicles are becoming more affordable for the average consumer.,The cost of battery-powered cars is decreasing for typical buyers.
-The committee reached a unanimous decision regarding the proposal.,Every member of the board agreed on the suggested plan.
-Technological advancements have changed the way we communicate.,Innovations in tech have altered our methods of interaction.
-The mountain peak was hidden by a thick layer of clouds.,Dense cloud cover obscured the top of the mountain.
-The sun disappeared behind the horizon.,The daylight faded as the sun sank below the skyline.
-Coffee consumption has increased globally.,The drinking of coffee has grown on a worldwide scale.
-The lecture focused on the principles of thermodynamics.,The talk centered around the fundamental laws of heat energy.
-She decided to pursue a career in environmental law.,Her choice was to follow a professional path in ecological litigation.
-The garden requires regular maintenance to thrive.,Consistent upkeep is necessary for the plants to flourish.
-Economic growth is expected to slow down next year.,Projections suggest a deceleration in financial expansion for the coming year.
-The novel was adapted into a successful film.,The book was turned into a popular motion picture.
-Volunteers distributed food to those in need.,Unpaid workers handed out meals to the underprivileged.
-The bridge was closed for repairs during the weekend.,Maintenance work led to the shutdown of the overpass over Saturday and Sunday.
-Astronauts conducted experiments in zero gravity.,Scientists in space performed tests within a weightless environment.
-The city council voted to increase funding for public parks.,Local officials approved more money for municipal green spaces.
-A balanced diet is essential for maintaining a healthy weight.,Eating a variety of foods helps keep your body mass at a good level.
-The storm damaged several power lines in the area.,A number of electrical cables were broken by the tempest in this region.
-He received an award for his outstanding contribution to science.,His exceptional work in the scientific field earned him a prize.
-The hotel offers spectacular views of the ocean.,Guests at the inn can enjoy amazing vistas of the sea.
-Cybersecurity is a top priority for modern businesses.,Protecting digital assets is crucial for companies today.
-The painting was sold at an auction for a record price.,The artwork fetched a historic sum when it was bid upon.
-They explored the ruins of the ancient civilization.,The group examined the remains of a society from long ago.
-Regular dental checkups help prevent tooth decay.,Visiting the dentist often can stop cavities from forming.
-The train station was crowded with commuters.,The terminal was packed with people traveling to work.
-The narrow lane opened onto a wide cobbled square.,A broad paved plaza appeared at the end of the tight alleyway.
-Mist clung to the valley as we descended the hillside.,As we came down the slope a low fog settled across the glen.
-The smell of salt water grew stronger as we neared the coast.,Approaching the shoreline the briny sea air became more pronounced.
-We rested on a wooden bench overlooking the harbour.,The group paused at a timber seat with a view across the port.
-The path wound steeply upward through dense woodland.,A narrow trail climbed sharply into thick forest.
-Sunlight broke through the canopy and scattered across the ground.,Rays of light filtered down through the trees and dappled the forest floor.
-The town appeared below us as we crested the ridge.,Reaching the top of the hill we could see the village spread out beneath.
-Wildflowers lined both sides of the track through the meadow.,The field path was bordered on each side by clusters of colourful blooms.
-The old lighthouse stood alone at the edge of the headland.,A solitary beacon tower occupied the tip of the promontory.
-We followed the river downstream until it met the sea.,The group traced the watercourse southward to where it joined the ocean.
-Rain began to fall softly as we crossed the open moorland.,A gentle drizzle started while we were traversing the exposed uplands.
-The churchyard was shaded by an enormous yew tree.,A vast ancient yew cast deep shadow across the graveyard.
-We stopped at a stone wall to take in the view across the valley.,The group paused beside a drystone boundary to survey the dale below.
-The harbour was busy with fishing boats returning at dusk.,As evening fell the port filled with trawlers coming back to shore.
-Mud clung to our boots as we crossed the waterlogged field.,Our footwear became heavy with clay after walking through the saturated ground.
-The ruins of the old mill stood beside a fast-moving stream.,Remnants of the ancient watermill remained next to a rapidly flowing brook.
-We heard birdsong long before we saw the woodland edge.,The sound of birds calling reached us well ahead of the treeline.
-The cliff path offered vertiginous views down to the rocky shore.,Standing on the coastal trail we looked steeply downward to the boulder-strewn beach.
-Frost had settled on the grass overnight leaving everything silver.,A heavy overnight freeze had coated the lawn in a pale glittering layer.
+"We walked along the old stone bridge crossing the river.","We crossed the old stone bridge over the river."
+"The old market square was quiet in the early morning.","The historic market square was silent early in the morning."
+"Noticed the distant hills turning purple as the light faded.","As the light faded, the distant hills turned purple."
+"The scientist published her findings in a prestigious journal.","The scientist released her findings in a leading journal."
+"Heavy rain caused the local football match to be postponed.","The local football match was postponed because of heavy rain."
+"Frequent exercise is known to improve cardiovascular health.","Regular exercise helps improve cardiovascular health."
+"The chef prepared a three-course meal for the distinguished guests.","The chef cooked a three-course dinner for the honoured guests."
+"Global temperatures are rising at an alarming rate according to recent data.","Recent data shows global temperatures are rising at an alarming rate."
+"Software developers often collaborate on open-source projects.","Software developers often work together on open-source projects."
+"The library offers a wide range of digital resources for students.","The library provides students with a broad range of digital resources."
+"The architecture of the building reflects a modernist aesthetic.","The building's architecture reflects a modernist style."
+"Traveling to new countries can broaden one's perspective on life.","Travelling to new countries can broaden a person's outlook on life."
+"The company decided to implement a new remote work policy.","The company adopted a new policy for remote work."
+"Wildfires have destroyed thousands of acres of forest land.","Wildfires have burned thousands of acres of forest."
+"Learning to play an instrument requires patience and dedication.","Learning to play a musical instrument takes patience and dedication."
+"The museum houses a significant collection of Impressionist paintings.","The museum contains an important collection of Impressionist paintings."
+"Electric vehicles are becoming more affordable for the average consumer.","Electric cars are becoming more affordable for average consumers."
+"The committee reached a unanimous decision regarding the proposal.","The committee unanimously agreed on the proposal."
+"Technological advancements have changed the way we communicate.","Technological progress has changed how we communicate."
+"The mountain peak was hidden by a thick layer of clouds.","A thick layer of cloud hid the mountain peak."
+"The sun disappeared behind the horizon.","The sun sank below the horizon."
+"Coffee consumption has increased globally.","Coffee consumption has risen around the world."
+"The lecture focused on the principles of thermodynamics.","The lecture concentrated on the principles of thermodynamics."
+"She decided to pursue a career in environmental law.","She chose to pursue a career in environmental law."
+"The garden requires regular maintenance to thrive.","The garden needs regular care in order to thrive."
+"Economic growth is expected to slow down next year.","Economic growth is expected to slow next year."
+"The novel was adapted into a successful film.","The novel was turned into a successful film."
+"Volunteers distributed food to those in need.","Volunteers handed out food to people in need."
+"The bridge was closed for repairs during the weekend.","The bridge was shut for repairs over the weekend."
+"Astronauts conducted experiments in zero gravity.","Astronauts carried out experiments in zero gravity."
+"The city council voted to increase funding for public parks.","The city council approved increased funding for public parks."
+"A balanced diet is essential for maintaining a healthy weight.","A balanced diet is important for maintaining a healthy weight."
+"The storm damaged several power lines in the area.","The storm damaged several power lines nearby."
+"He received an award for his outstanding contribution to science.","He won an award for his outstanding contribution to science."
+"The hotel offers spectacular views of the ocean.","The hotel provides spectacular ocean views."
+"Cybersecurity is a top priority for modern businesses.","Cybersecurity remains a major priority for modern businesses."
+"The painting was sold at an auction for a record price.","The painting sold at auction for a record amount."
+"They explored the ruins of the ancient civilization.","They explored the ruins of an ancient civilization."
+"Regular dental checkups help prevent tooth decay.","Regular dental checkups can help prevent tooth decay."
+"The train station was crowded with commuters.","The train station was full of commuters."
+"The narrow lane opened onto a wide cobbled square.","The narrow lane led into a wide cobbled square."
+"Mist clung to the valley as we descended the hillside.","Mist hung over the valley as we walked down the hillside."
+"The smell of salt water grew stronger as we neared the coast.","The scent of salt water grew stronger as we approached the coast."
+"We rested on a wooden bench overlooking the harbour.","We sat on a wooden bench overlooking the harbour."
+"The path wound steeply upward through dense woodland.","The path climbed steeply through dense woodland."
+"Sunlight broke through the canopy and scattered across the ground.","Sunlight filtered through the canopy and fell across the ground."
+"Wildflowers lined both sides of the track through the meadow.","Wildflowers bordered both sides of the meadow path."
+"The old lighthouse stood alone at the edge of the headland.","The old lighthouse stood by itself on the edge of the headland."
+"We followed the river downstream until it met the sea.","We followed the river downstream to where it met the sea."
+"Rain began to fall softly as we crossed the open moorland.","A light rain started as we crossed the open moor."
+"The churchyard was shaded by an enormous yew tree.","The churchyard lay in the shade of a huge yew tree."
+"We stopped at a stone wall to take in the view across the valley.","We paused by a stone wall to admire the view across the valley."
+"The harbour was busy with fishing boats returning at dusk.","At dusk, the harbour was busy with fishing boats returning."
+"Mud clung to our boots as we crossed the waterlogged field.","Mud stuck to our boots as we crossed the waterlogged field."
+"The ruins of the old mill stood beside a fast-moving stream.","The remains of the old mill stood beside a fast-flowing stream."
+"Frost had settled on the grass overnight leaving everything silver.","Overnight frost had settled on the grass, leaving everything silver."

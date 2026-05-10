@@ -80,6 +80,10 @@ class OSMClient:
                 response = requests.post(
                     self.BASE_URL,
                     data={"data": query},
+                    headers={
+                        "Accept": "application/json",
+                        "User-Agent": "AffectiveTravelogue/1.0 (research project)",
+                    },
                     timeout=query_timeout + 10,
                 )
 

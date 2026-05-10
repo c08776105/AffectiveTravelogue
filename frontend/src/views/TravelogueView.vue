@@ -169,8 +169,19 @@
                                 hide-details
                                 class="mb-1"
                             />
-                            <p class="text-caption text-medium-emphasis">
+                            <p class="text-caption text-medium-emphasis mb-3">
                                 Analyses your journey notes to adapt the AI's writing style to match yours before generating.
+                            </p>
+                            <v-switch
+                                v-model="configThinking"
+                                label="Extended Thinking"
+                                color="primary"
+                                density="compact"
+                                hide-details
+                                class="mb-1"
+                            />
+                            <p class="text-caption text-medium-emphasis">
+                                Enable chain-of-thought reasoning. Only supported by select models (e.g. deepseek-r1).
                             </p>
                             <v-btn
                                 block
@@ -443,6 +454,7 @@ const showConfig = ref(false);
 const configModel = ref<string>("");
 const configPromptType = ref("zero_shot");
 const configMetaPrompt = ref(false);
+const configThinking = ref(false);
 const availableModels = ref<string[]>([]);
 const promptTypeOptions = [
     { label: "Zero Shot", value: "zero_shot" },
@@ -507,6 +519,7 @@ async function generateNew() {
             llmModel: configModel.value || undefined,
             promptType: configPromptType.value,
             useMetaPrompt: configMetaPrompt.value,
+            enableThinking: configThinking.value,
         });
         travelogues.value.unshift(newTravelogue);
         selectedTravelogue.value = newTravelogue;

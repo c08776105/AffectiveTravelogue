@@ -90,6 +90,7 @@ export interface TravelogueCreate {
     llmModel?: string | null;
     promptType?: string;
     useMetaPrompt?: boolean;
+    enableThinking?: boolean;
 }
 
 export interface TravelogueResponse {
