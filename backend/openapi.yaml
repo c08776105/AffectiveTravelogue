@@ -5,260 +5,373 @@ info:
   version: 1.0.0
 paths:
   /api/routes/:
+    get:
+      tags:
+      - Routes
+      summary: List Routes
+      operationId: list_routes_api_routes__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/RouteResponse'
+                type: array
+                title: Response List Routes Api Routes  Get
     post:
       tags:
-        - Routes
+      - Routes
       summary: Create Route
       operationId: create_route_api_routes__post
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RouteCreate"
+              $ref: '#/components/schemas/RouteCreate'
         required: true
       responses:
-        "201":
+        '201':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RouteResponse"
-        "422":
+                $ref: '#/components/schemas/RouteResponse'
+        '422':
           description: Validation Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPValidationError"
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/routes/{id}:
     get:
       tags:
-        - Routes
+      - Routes
       summary: Get Route
       operationId: get_route_api_routes__id__get
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            title: Id
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Id
       responses:
-        "200":
+        '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RouteResponse"
-        "422":
+                $ref: '#/components/schemas/RouteResponse'
+        '422':
           description: Validation Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPValidationError"
+                $ref: '#/components/schemas/HTTPValidationError'
     patch:
       tags:
-        - Routes
+      - Routes
       summary: Update Route
       operationId: update_route_api_routes__id__patch
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            title: Id
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Id
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RouteUpdate"
+              $ref: '#/components/schemas/RouteUpdate'
       responses:
-        "200":
+        '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RouteResponse"
-        "422":
+                $ref: '#/components/schemas/RouteResponse'
+        '422':
           description: Validation Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPValidationError"
+                $ref: '#/components/schemas/HTTPValidationError'
     delete:
       tags:
-        - Routes
+      - Routes
       summary: Delete Route
       operationId: delete_route_api_routes__id__delete
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            title: Id
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Id
       responses:
-        "200":
+        '204':
           description: Successful Response
-          content:
-            application/json:
-              schema: {}
-        "422":
+        '422':
           description: Validation Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPValidationError"
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/routes/{id}/finalise:
     post:
       tags:
-        - Routes
+      - Routes
       summary: Finalise Route
       operationId: finalise_route_api_routes__id__finalise_post
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            title: Id
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Id
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RouteUpdate"
+              $ref: '#/components/schemas/RouteUpdate'
       responses:
-        "200":
+        '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RouteResponse"
-        "422":
+                $ref: '#/components/schemas/RouteResponse'
+        '422':
           description: Validation Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPValidationError"
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/routes/{id}/waypoints:
+    get:
+      tags:
+      - Routes
+      summary: Get Route Waypoints
+      operationId: get_route_waypoints_api_routes__id__waypoints_get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WaypointResponse'
+                title: Response Get Route Waypoints Api Routes  Id  Waypoints Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/waypoints/:
     post:
       tags:
-        - Waypoints
+      - Waypoints
       summary: Submit Waypoint
       operationId: submit_waypoint_api_waypoints__post
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/WaypointCreate"
+              $ref: '#/components/schemas/WaypointCreate'
         required: true
       responses:
-        "201":
+        '201':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WaypointResponse"
-        "422":
+                $ref: '#/components/schemas/WaypointResponse'
+        '422':
           description: Validation Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPValidationError"
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/generate/models:
+    get:
+      tags:
+      - Generation
+      summary: List Models
+      description: Return the names of models available in the configured Ollama instance.
+      operationId: list_models_api_generate_models_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
   /api/generate/{route_id}:
     post:
       tags:
-        - Generation
+      - Generation
       summary: Generate Travelogue
       operationId: generate_travelogue_api_generate__route_id__post
       parameters:
-        - name: route_id
-          in: path
-          required: true
-          schema:
-            type: string
-            title: Route Id
-      responses:
-        "200":
-          description: Successful Response
-          content:
-            application/json:
-              schema: {}
-        "422":
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HTTPValidationError"
-  /api/evaluate/{route_id}:
-    post:
-      tags:
-        - Evaluation
-      summary: Evaluate Route
-      operationId: evaluate_route_api_evaluate__route_id__post
-      parameters:
-        - name: route_id
-          in: path
-          required: true
-          schema:
-            type: string
-            title: Route Id
-      requestBody:
+      - name: route_id
+        in: path
         required: true
+        schema:
+          type: string
+          title: Route Id
+      requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/EvaluationCreate"
+              anyOf:
+              - $ref: '#/components/schemas/TravelogueCreate'
+              - type: 'null'
+              title: Body
       responses:
-        "200":
+        '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EvaluationResponse"
-        "422":
+                $ref: '#/components/schemas/TravelogueResponse'
+        '422':
           description: Validation Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPValidationError"
-  /health:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - Generation
+      summary: List Travelogues
+      operationId: list_travelogues_api_generate__route_id__get
+      parameters:
+      - name: route_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Route Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TravelogueResponse'
+                title: Response List Travelogues Api Generate  Route Id  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/evaluate/{route_id}:
+    get:
+      tags:
+      - Evaluation
+      summary: Get Evaluation
+      operationId: get_evaluation_api_evaluate__route_id__get
+      parameters:
+      - name: route_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Route Id
+      - name: travelogue_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Travelogue Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Evaluation
+      summary: Evaluate Route
+      operationId: evaluate_route_api_evaluate__route_id__post
+      parameters:
+      - name: route_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Route Id
+      - name: travelogue_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Travelogue Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/health:
     get:
       summary: Health Check
-      operationId: health_check_health_get
+      operationId: health_check_api_health_get
       responses:
-        "200":
+        '200':
           description: Successful Response
           content:
             application/json:
               schema: {}
-  /heartbeat:
+  /api/heartbeat:
     get:
       summary: Heartbeat
-      operationId: heartbeat_health_get
+      operationId: heartbeat_api_heartbeat_get
       responses:
-        "200":
+        '200':
           description: Successful Response
           content:
             application/json:
               schema: {}
 components:
   schemas:
-    EvaluationCreate:
-      properties:
-        routeId:
-          type: string
-          title: Routeid
-        humanJournal:
-          type: string
-          title: Humanjournal
-      type: object
-      required:
-        - routeId
-        - humanJournal
-      title: EvaluationCreate
     EvaluationResponse:
       properties:
         bertscoreF1:
@@ -279,24 +392,117 @@ components:
         aiSentiment:
           type: number
           title: Aisentiment
+        humanJournal:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Humanjournal
+        aiTravelogue:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Aitravelogue
         createdAt:
           type: string
           format: date-time
           title: Createdat
+        bertscoreModel:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Bertscoremodel
+        travelogueId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Travelogueid
+        promptType:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Prompttype
+        isTruncated:
+          type: boolean
+          title: Istruncated
+          default: false
+        pairF1:
+          items:
+            type: number
+          type: array
+          title: Pairf1
+          default: []
+        pairPrecision:
+          items:
+            type: number
+          type: array
+          title: Pairprecision
+          default: []
+        pairRecall:
+          items:
+            type: number
+          type: array
+          title: Pairrecall
+          default: []
+        pairIsTruncated:
+          items:
+            type: boolean
+          type: array
+          title: Pairistruncated
+          default: []
+        humanWaypointCount:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Humanwaypointcount
+        aiParagraphCount:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Aiparagraphcount
+        stats:
+          anyOf:
+          - $ref: '#/components/schemas/EvaluationStats'
+          - type: 'null'
       type: object
       required:
-        - bertscoreF1
-        - bertscorePrecision
-        - bertscoreRecall
-        - isEquivalent
-        - humanSentiment
-        - aiSentiment
+      - bertscoreF1
+      - bertscorePrecision
+      - bertscoreRecall
+      - isEquivalent
+      - humanSentiment
+      - aiSentiment
       title: EvaluationResponse
+    EvaluationStats:
+      properties:
+        meanF1:
+          type: number
+          title: Meanf1
+        minF1:
+          type: number
+          title: Minf1
+        maxF1:
+          type: number
+          title: Maxf1
+        sampleCount:
+          type: integer
+          title: Samplecount
+        updatedAt:
+          type: string
+          format: date-time
+          title: Updatedat
+      type: object
+      required:
+      - meanF1
+      - minF1
+      - maxF1
+      - sampleCount
+      - updatedAt
+      title: EvaluationStats
     HTTPValidationError:
       properties:
         detail:
           items:
-            $ref: "#/components/schemas/ValidationError"
+            $ref: '#/components/schemas/ValidationError'
           type: array
           title: Detail
       type: object
@@ -320,29 +526,44 @@ components:
           title: Startlon
         endLat:
           anyOf:
-            - type: number
-              maximum: 90.0
-              minimum: -90.0
-            - type: "null"
+          - type: number
+            maximum: 90.0
+            minimum: -90.0
+          - type: 'null'
           title: Endlat
         endLon:
           anyOf:
-            - type: number
-              maximum: 180.0
-              minimum: -180.0
-            - type: "null"
+          - type: number
+            maximum: 180.0
+            minimum: -180.0
+          - type: 'null'
           title: Endlon
         distanceKm:
           anyOf:
-            - type: number
-              exclusiveMinimum: 0.0
-            - type: "null"
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: 'null'
           title: Distancekm
+        derivePoints:
+          anyOf:
+          - type: integer
+            maximum: 10.0
+            minimum: 1.0
+          - type: 'null'
+          title: Derivepoints
+          description: "Number of d\xE9rive deviation waypoints"
+        deviationMeters:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: 'null'
+          title: Deviationmeters
+          description: Maximum deviation distance in metres
       type: object
       required:
-        - name
-        - startLat
-        - startLon
+      - name
+      - startLat
+      - startLon
       title: RouteCreate
     RouteResponse:
       properties:
@@ -363,24 +584,39 @@ components:
           title: Startlon
         endLat:
           anyOf:
-            - type: number
-              maximum: 90.0
-              minimum: -90.0
-            - type: "null"
+          - type: number
+            maximum: 90.0
+            minimum: -90.0
+          - type: 'null'
           title: Endlat
         endLon:
           anyOf:
-            - type: number
-              maximum: 180.0
-              minimum: -180.0
-            - type: "null"
+          - type: number
+            maximum: 180.0
+            minimum: -180.0
+          - type: 'null'
           title: Endlon
         distanceKm:
           anyOf:
-            - type: number
-              exclusiveMinimum: 0.0
-            - type: "null"
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: 'null'
           title: Distancekm
+        derivePoints:
+          anyOf:
+          - type: integer
+            maximum: 10.0
+            minimum: 1.0
+          - type: 'null'
+          title: Derivepoints
+          description: "Number of d\xE9rive deviation waypoints"
+        deviationMeters:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: 'null'
+          title: Deviationmeters
+          description: Maximum deviation distance in metres
         id:
           type: string
           title: Id
@@ -392,50 +628,131 @@ components:
           type: string
           title: Status
           default: active
+        waypointCount:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Waypointcount
+          description: Number of waypoints logged on this route
+        travelogue:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Travelogue
+          description: AI-generated travelogue text
+        firstNote:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Firstnote
+          description: First waypoint text note, for journal previews
       type: object
       required:
-        - name
-        - startLat
-        - startLon
-        - id
-        - createdAt
+      - name
+      - startLat
+      - startLon
+      - id
+      - createdAt
       title: RouteResponse
     RouteUpdate:
       properties:
         name:
           anyOf:
-            - type: string
-            - type: "null"
+          - type: string
+          - type: 'null'
           title: Name
         status:
           anyOf:
-            - type: string
-            - type: "null"
+          - type: string
+          - type: 'null'
           title: Status
         endLat:
           anyOf:
-            - type: number
-            - type: "null"
+          - type: number
+          - type: 'null'
           title: Endlat
         endLon:
           anyOf:
-            - type: number
-            - type: "null"
+          - type: number
+          - type: 'null'
           title: Endlon
         distanceKm:
           anyOf:
-            - type: number
-            - type: "null"
+          - type: number
+          - type: 'null'
           title: Distancekm
       type: object
       title: RouteUpdate
+    TravelogueCreate:
+      properties:
+        llmModel:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Llmmodel
+        promptType:
+          type: string
+          enum:
+          - zero_shot
+          - few_shot
+          title: Prompttype
+          default: zero_shot
+        useMetaPrompt:
+          type: boolean
+          title: Usemetaprompt
+          default: false
+        enableThinking:
+          type: boolean
+          title: Enablethinking
+          default: false
+      type: object
+      title: TravelogueCreate
+    TravelogueResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        text:
+          type: string
+          title: Text
+        llmModel:
+          type: string
+          title: Llmmodel
+        promptType:
+          type: string
+          title: Prompttype
+          default: zero_shot
+        metaPrompted:
+          type: boolean
+          title: Metaprompted
+          default: false
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        isValid:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Isvalid
+        evaluation:
+          anyOf:
+          - $ref: '#/components/schemas/EvaluationResponse'
+          - type: 'null'
+      type: object
+      required:
+      - id
+      - text
+      - llmModel
+      - createdAt
+      title: TravelogueResponse
     ValidationError:
       properties:
         loc:
           items:
             anyOf:
-              - type: string
-              - type: integer
+            - type: string
+            - type: integer
           type: array
           title: Location
         msg:
@@ -451,9 +768,9 @@ components:
           title: Context
       type: object
       required:
-        - loc
-        - msg
-        - type
+      - loc
+      - msg
+      - type
       title: ValidationError
     WaypointCreate:
       properties:
@@ -469,28 +786,27 @@ components:
           title: Longitude
         textNote:
           anyOf:
-            - type: string
-              maxLength: 500
-            - type: "null"
+          - type: string
+          - type: 'null'
           title: Textnote
         voiceBlobUrl:
           anyOf:
-            - type: string
-            - type: "null"
+          - type: string
+          - type: 'null'
           title: Voicebloburl
         imageUrl:
           anyOf:
-            - type: string
-            - type: "null"
+          - type: string
+          - type: 'null'
           title: Imageurl
         routeId:
           type: string
           title: Routeid
       type: object
       required:
-        - latitude
-        - longitude
-        - routeId
+      - latitude
+      - longitude
+      - routeId
       title: WaypointCreate
     WaypointResponse:
       properties:
@@ -506,27 +822,26 @@ components:
           title: Longitude
         textNote:
           anyOf:
-            - type: string
-              maxLength: 500
-            - type: "null"
+          - type: string
+          - type: 'null'
           title: Textnote
         voiceBlobUrl:
           anyOf:
-            - type: string
-            - type: "null"
+          - type: string
+          - type: 'null'
           title: Voicebloburl
         imageUrl:
           anyOf:
-            - type: string
-            - type: "null"
+          - type: string
+          - type: 'null'
           title: Imageurl
         id:
           type: string
           title: Id
         transcription:
           anyOf:
-            - type: string
-            - type: "null"
+          - type: string
+          - type: 'null'
           title: Transcription
         storedAt:
           type: string
@@ -534,8 +849,8 @@ components:
           title: Storedat
       type: object
       required:
-        - latitude
-        - longitude
-        - id
-        - storedAt
+      - latitude
+      - longitude
+      - id
+      - storedAt
       title: WaypointResponse

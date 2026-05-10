@@ -9,7 +9,9 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
+from pydantic import ValidationError
 
+from models.route import TravelogueCreate
 from tests.conftest import ELEVATIONS, POI_MAP, WAYPOINTS
 
 
@@ -157,11 +159,16 @@ class TestRankPoisSalience:
 
     def test_salience_field_added_to_each_poi(self, rag_svc, mocker):
         svc, _ = rag_svc
-        llm_response = (
-            "Waypoint 0 HIGH: Kill River (waterway:river)\n"
-            "Waypoint 0 MEDIUM: none\n"
-            "Waypoint 0 LOW: unnamed (amenity:waste_basket)\n"
-        )
+        llm_response = json.dumps({
+            "waypoints": [
+                {
+                    "index": 0,
+                    "high": ["Kill River"],
+                    "medium": [],
+                    "low": ["unnamed"],
+                }
+            ]
+        })
         mock_chain = MagicMock()
         mock_chain.invoke.return_value = llm_response
         mocker.patch("services.rag_service.ChatPromptTemplate.from_messages", return_value=MagicMock(
@@ -179,6 +186,31 @@ class TestRankPoisSalience:
         names = {p["name"]: p["salience"] for p in result[0]}
         assert names["Kill River"] == "HIGH"
         assert names["unnamed"] == "LOW"
+
+    def test_duplicate_poi_names_are_scoped_to_waypoint(self, rag_svc, mocker):
+        svc, _ = rag_svc
+        llm_response = json.dumps({
+            "waypoints": [
+                {"index": 0, "high": ["Unnamed POI"], "medium": [], "low": []},
+                {"index": 1, "high": [], "medium": [], "low": ["Unnamed POI"]},
+            ]
+        })
+        mock_chain = MagicMock()
+        mock_chain.invoke.return_value = llm_response
+        mocker.patch("services.rag_service.ChatPromptTemplate.from_messages", return_value=MagicMock(
+            __or__=MagicMock(return_value=MagicMock(
+                __or__=MagicMock(return_value=mock_chain)
+            ))
+        ))
+
+        poi_map = {
+            0: [{"name": "Unnamed POI", "type": "building"}],
+            1: [{"name": "Unnamed POI", "type": "amenity:parking"}],
+        }
+        result = svc._rank_pois_salience(poi_map, MagicMock())
+
+        assert result[0][0]["salience"] == "HIGH"
+        assert result[1][0]["salience"] == "LOW"
 
     def test_llm_exception_defaults_all_to_medium(self, rag_svc, mocker):
         svc, _ = rag_svc
@@ -198,7 +230,11 @@ class TestRankPoisSalience:
     def test_unrecognised_poi_name_defaults_to_medium(self, rag_svc, mocker):
         svc, _ = rag_svc
         # LLM response doesn't mention "Unknown POI"
-        llm_response = "Waypoint 0 HIGH: River (waterway:river)\nWaypoint 0 MEDIUM: none\nWaypoint 0 LOW: none\n"
+        llm_response = json.dumps({
+            "waypoints": [
+                {"index": 0, "high": ["River"], "medium": [], "low": []}
+            ]
+        })
         mock_chain = MagicMock()
         mock_chain.invoke.return_value = llm_response
         mocker.patch("services.rag_service.ChatPromptTemplate.from_messages", return_value=MagicMock(
@@ -475,7 +511,7 @@ class TestGenerateTravelogue:
         mock_meta.assert_called_once()
         assert result["meta_prompted"] is True
 
-    def test_llm_exception_returns_error_in_text(self, rag_svc, mocker):
+    def test_llm_exception_raises_generation_error(self, rag_svc, mocker):
         svc, _ = rag_svc
         self._patch_full_pipeline(mocker)
         mock_chain = MagicMock()
@@ -483,12 +519,13 @@ class TestGenerateTravelogue:
         mocker.patch("services.rag_service.ChatPromptTemplate.from_messages",
                      return_value=MagicMock(__or__=MagicMock(
                          return_value=MagicMock(__or__=MagicMock(return_value=mock_chain))
-                     )))
+        )))
         mocker.patch.object(svc, "_rank_pois_salience", side_effect=lambda m, _: m)
 
-        result = svc.generate_travelogue("r1")
-        assert "Generation failed" in result["text"]
-        assert result["meta_prompted"] is False
+        from services.rag_service import TravelogueGenerationError
+
+        with pytest.raises(TravelogueGenerationError, match="Generation failed"):
+            svc.generate_travelogue("r1")
 
     def test_prompt_type_zero_shot_stored_in_result(self, rag_svc, mocker):
         svc, _ = rag_svc
@@ -503,3 +540,18 @@ class TestGenerateTravelogue:
 
         result = svc.generate_travelogue("r1", prompt_type="zero_shot")
         assert result["prompt_type"] == "zero_shot"
+
+
+# ===========================================================================
+# TravelogueCreate
+# ===========================================================================
+
+class TestTravelogueCreate:
+
+    def test_prompt_type_allows_supported_values(self):
+        assert TravelogueCreate(prompt_type="zero_shot").prompt_type == "zero_shot"
+        assert TravelogueCreate(prompt_type="few_shot").prompt_type == "few_shot"
+
+    def test_prompt_type_rejects_unknown_values(self):
+        with pytest.raises(ValidationError):
+            TravelogueCreate(prompt_type="chain_of_thought")

@@ -13,6 +13,11 @@ from utils.elevation_client import elevation_client
 from utils.logger import logger
 from utils.osm_client import osm_client
 
+
+class TravelogueGenerationError(RuntimeError):
+    """Raised when the final travelogue generation call fails."""
+
+
 _SALIENCE_SYSTEM_PROMPT = """\
 You are a spatial data ranker operating on the principles of cognitive geography. \
 Your task is to rank raw OpenStreetMap Points of Interest (POIs) by their human \
@@ -64,7 +69,6 @@ class RAGService:
         self.llm = OllamaLLM(
             base_url=settings.OLLAMA_HOST,
             model=settings.LLM_MODEL,
-            reasoning=True,
             temperature=0.7,
             num_ctx=8192,
             num_predict=2048,  # Change to allow for large numbers of POIs to process during salience ranking
@@ -147,6 +151,7 @@ class RAGService:
             )
             lines.append(f"Waypoint {i}:\n{formatted}")
 
+        response = ""
         try:
             rank_prompt = ChatPromptTemplate.from_messages(
                 [
@@ -168,19 +173,27 @@ class RAGService:
 
             data = _json.loads(json_match.group())
 
-            # Build name → tier lookup
-            name_to_tier: dict[str, str] = {}
+            # Build waypoint-scoped name -> tier lookup so repeated POI names
+            # on different waypoints do not overwrite each other.
+            tier_by_waypoint: dict[int, dict[str, str]] = {}
             for wp in data.get("waypoints", []):
+                try:
+                    index = int(wp["index"])
+                except (KeyError, TypeError, ValueError):
+                    continue
+                name_to_tier: dict[str, str] = {}
                 for name in wp.get("high", []):
                     name_to_tier[name] = "HIGH"
                 for name in wp.get("medium", []):
                     name_to_tier[name] = "MEDIUM"
                 for name in wp.get("low", []):
                     name_to_tier[name] = "LOW"
+                tier_by_waypoint[index] = name_to_tier
 
             # Annotate original POI dicts
             ranked_map: dict[int, list[dict]] = {}
             for i, pois in poi_map.items():
+                name_to_tier = tier_by_waypoint.get(i, {})
                 ranked_map[i] = [
                     {**p, "salience": name_to_tier.get(p["name"], "MEDIUM")}
                     for p in pois
@@ -367,21 +380,22 @@ class RAGService:
         llm_model: str | None = None,
         prompt_type: str = "zero_shot",
         use_meta_prompt: bool = False,
+        enable_thinking: bool = False,
     ) -> dict:
         effective_model = llm_model or settings.LLM_MODEL
-        llm = (
-            OllamaLLM(
+        if effective_model != settings.LLM_MODEL or enable_thinking:
+            llm = OllamaLLM(
                 base_url=settings.OLLAMA_HOST,
                 model=effective_model,
+                reasoning=enable_thinking,
                 temperature=self.llm.temperature,
                 num_ctx=self.llm.num_ctx,
                 num_predict=self.llm.num_predict,
                 top_p=self.llm.top_p,
                 top_k=self.llm.top_k,
             )
-            if effective_model != settings.LLM_MODEL
-            else self.llm
-        )
+        else:
+            llm = self.llm
 
         route, waypoints, poi_map, elevations = self.build_context(route_id)
         if not route:
@@ -479,12 +493,7 @@ class RAGService:
             }
         except Exception as e:
             logger.error(f"LangChain generation failed: {e}")
-            return {
-                "text": f"Generation failed: {str(e)}",
-                "llm_model": effective_model,
-                "prompt_type": prompt_type,
-                "meta_prompted": False,
-            }
+            raise TravelogueGenerationError(f"Generation failed: {e}") from e
 
     def llm_accessible(self) -> str:
         try:

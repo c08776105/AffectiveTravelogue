@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
@@ -38,8 +38,9 @@ class RouteUpdate(BaseModel):
 
 class TravelogueCreate(BaseModel):
     llm_model: Optional[str] = None
-    prompt_type: str = "zero_shot"
+    prompt_type: Literal["zero_shot", "few_shot"] = "zero_shot"
     use_meta_prompt: bool = False
+    enable_thinking: bool = False
 
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 

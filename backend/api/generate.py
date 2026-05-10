@@ -2,11 +2,10 @@ from typing import Optional
 
 import requests
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
 
 from models.route import TravelogueCreate, TravelogueResponse
 from services.neo4j_service import neo4j_service
-from services.rag_service import rag_service
+from services.rag_service import TravelogueGenerationError, rag_service
 from utils.config import settings
 
 router = APIRouter(prefix="/api/generate", tags=["Generation"])
@@ -32,6 +31,7 @@ async def generate_travelogue(route_id: str, body: Optional[TravelogueCreate] = 
     llm_model = body.llm_model if body else None
     prompt_type = body.prompt_type if body else "zero_shot"
     use_meta_prompt = body.use_meta_prompt if body else False
+    enable_thinking = body.enable_thinking if body else False
 
     try:
         result = rag_service.generate_travelogue(
@@ -39,6 +39,7 @@ async def generate_travelogue(route_id: str, body: Optional[TravelogueCreate] = 
             llm_model=llm_model,
             prompt_type=prompt_type,
             use_meta_prompt=use_meta_prompt,
+            enable_thinking=enable_thinking,
         )
         node = neo4j_service.store_travelogue_node(
             route_id,
@@ -48,6 +49,8 @@ async def generate_travelogue(route_id: str, body: Optional[TravelogueCreate] = 
             meta_prompted=result.get("meta_prompted", False),
         )
         return node
+    except TravelogueGenerationError as e:
+        raise HTTPException(status_code=502, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

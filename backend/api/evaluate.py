@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Query
 from models.evaluation import EvaluationResponse
 from services.eval_service import eval_service
 from services.neo4j_service import neo4j_service
-from services.rag_service import rag_service
+from services.rag_service import TravelogueGenerationError, rag_service
 
 router = APIRouter(prefix="/api/evaluate", tags=["Evaluation"])
 
@@ -70,7 +70,10 @@ async def evaluate_route(route_id: str, travelogue_id: Optional[str] = Query(Non
             travelogue_id = travelogue_node["id"]
             ai_travelogue = travelogue_node["text"]
         else:
-            result = rag_service.generate_travelogue(route_id)
+            try:
+                result = rag_service.generate_travelogue(route_id)
+            except TravelogueGenerationError as e:
+                raise HTTPException(status_code=502, detail=str(e))
             travelogue_node = neo4j_service.store_travelogue_node(
                 route_id, result["text"], result["llm_model"], result["prompt_type"]
             )
